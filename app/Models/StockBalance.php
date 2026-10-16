@@ -16,6 +16,7 @@ class StockBalance extends Model
         'store_id',
         'quantity_on_hand',
         'quantity_reserved',
+        'damaged_quantity',
         'reorder_level',
     ];
 
@@ -24,6 +25,7 @@ class StockBalance extends Model
         return [
             'quantity_on_hand' => 'integer',
             'quantity_reserved' => 'integer',
+            'damaged_quantity' => 'integer',
             'reorder_level' => 'integer',
         ];
     }

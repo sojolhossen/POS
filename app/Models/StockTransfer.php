@@ -18,6 +18,8 @@ class StockTransfer extends Model
         'status',
         'notes',
         'created_by',
+        'approved_by',
+        'approved_at',
         'dispatched_by',
         'dispatched_at',
         'received_by',
@@ -27,6 +29,7 @@ class StockTransfer extends Model
     protected function casts(): array
     {
         return [
+            'approved_at' => 'datetime',
             'dispatched_at' => 'datetime',
             'received_at' => 'datetime',
         ];
@@ -45,6 +48,11 @@ class StockTransfer extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function dispatcher(): BelongsTo

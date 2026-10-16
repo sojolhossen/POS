@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class PosSaleItem extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'pos_sale_id',
+        'product_variant_id',
+        'barcode',
+        'product_name',
+        'size',
+        'color',
+        'quantity',
+        'unit_price',
+        'discount_amount',
+        'tax_amount',
+        'line_total',
+        'quantity_returned',
+    ];
+
+    protected $casts = [
+        'unit_price' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'line_total' => 'decimal:2',
+    ];
+
+    public function posSale()
+    {
+        return $this->belongsTo(PosSale::class);
+    }
+
+    public function productVariant()
+    {
+        return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function returnableQuantity(): int
+    {
+        return max(0, $this->quantity - $this->quantity_returned);
+    }
+}

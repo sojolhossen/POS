@@ -12,6 +12,7 @@ enum StockTransactionType: string
     case TRANSFER_RECEIVE = 'transfer_receive';
     case SALE = 'sale';
     case RETURN = 'return';
+    case RETURN_SUPPLIER = 'return_supplier';
     case REVERSAL = 'reversal';
 
     public function label(): string
@@ -25,6 +26,7 @@ enum StockTransactionType: string
             self::TRANSFER_RECEIVE => __('messages.tx_transfer_receive'),
             self::SALE => __('messages.tx_sale'),
             self::RETURN => __('messages.tx_return'),
+            self::RETURN_SUPPLIER => 'Supplier Return',
             self::REVERSAL => __('messages.tx_reversal'),
         };
     }

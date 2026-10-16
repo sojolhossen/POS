@@ -1,0 +1,32 @@
+{
+  "mode": "implement",
+  "objective": "Clothing Store Management System — Master Prompt 2 of 4: Purchasing, Supplier Management, Warehouse Transfers, POS, Returns & Financial Integrity",
+  "acceptance_criteria": [
+    "Supplier management exclusive to Super Admin with duplicate warnings and financial ledgers",
+    "Purchase order lifecycle (Draft -> Submitted -> Super Admin Approved -> Partially/Fully Received -> Completed)",
+    "Purchase receiving with separate tracking of ordered, received, accepted, shortage, excess, and damaged quantities",
+    "Landed cost calculation and Weighted Average Cost (WAC) inventory valuation method",
+    "Warehouse and inter-store transfers with request, approval, dispatch (in-transit deduction), and receiving confirmation",
+    "Production-oriented POS checkout with barcode scanning, price lookup, promotions, tax calculation, and BDT rounding",
+    "Multi-method split payments (Cash, bKash, Nagad, Rocket, Card) with change calculation and server validation",
+    "Scheduled promotional discounts without stacking and configurable tax rates",
+    "80mm printable thermal receipt generation and reprint capability without creating duplicate sales",
+    "Seven-day return policy, receipt lookup, receiptless return manager approval, and Sellable/Damaged/Defective stock classification",
+    "Exchange difference settlement (collect or refund) and permanent linkage to original invoice",
+    "Supplier returns with damaged/excess stock reduction and credit/cash settlement",
+    "Customer records with loyalty point earning, redemption (1 point = 1 BDT), and return reversal",
+    "Daily cash control with opening cash, cash sales/refunds tracking, expected vs actual closing, and day locking",
+    "Concurrency-safe global transaction numbering and secure QR code verification",
+    "Role permissions preventing cashiers and store managers from accessing unauthorized financial data or other store records",
+    "Comprehensive automated tests covering purchasing, costing, transfers, POS, split payments, returns, cash closing, and rollback"
+  ],
+  "non_goals": [
+    "Do not implement offline sales or offline transaction queues",
+    "Do not add product-photo functionality",
+    "Do not implement salary, attendance, or accounting ledger exports (deferred to Prompt 3)"
+  ],
+  "risk": "high",
+  "budget": "deep",
+  "allowed_write_scope": ["*"],
+  "verification": "full"
+}

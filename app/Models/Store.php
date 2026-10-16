@@ -67,4 +67,29 @@ class Store extends Model
     {
         return $query->where('is_warehouse', true);
     }
+
+    public function posSales(): HasMany
+    {
+        return $this->hasMany(PosSale::class);
+    }
+
+    public function dailyCashRegisters(): HasMany
+    {
+        return $this->hasMany(DailyCashRegister::class);
+    }
+
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class, 'destination_store_id');
+    }
+
+    public function transfersOut(): HasMany
+    {
+        return $this->hasMany(StockTransfer::class, 'source_store_id');
+    }
+
+    public function transfersIn(): HasMany
+    {
+        return $this->hasMany(StockTransfer::class, 'destination_store_id');
+    }
 }

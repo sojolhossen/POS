@@ -20,6 +20,7 @@ class ProductVariant extends Model
         'barcode',
         'purchase_price',
         'selling_price',
+        'weighted_average_cost',
         'is_active',
     ];
 
@@ -28,6 +29,7 @@ class ProductVariant extends Model
         return [
             'purchase_price' => 'decimal:2',
             'selling_price' => 'decimal:2',
+            'weighted_average_cost' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }
