@@ -30,7 +30,9 @@ Route::get('/api/ping', [ConnectivityController::class, 'ping'])->name('api.ping
 // Authentication routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('login.store');
 });
 
 // Authenticated application routes
@@ -197,12 +199,14 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:super_admin,store_manager,warehouse_staff')
         ->name('transfers.receive.store');
 
-    // Point of Sale (POS) Checkout
-    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-    Route::get('/pos/search', [PosController::class, 'searchProduct'])->name('pos.search');
-    Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
-    Route::get('/pos/receipt/{sale}', [PosController::class, 'receipt'])->name('pos.receipt');
-    Route::get('/pos/reprint/{sale}', [PosController::class, 'reprint'])->name('pos.reprint');
+    // Point of Sale (POS) Checkout (Authorized front-of-house roles ONLY)
+    Route::middleware('role:super_admin,store_manager,cashier')->group(function () {
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::get('/pos/search', [PosController::class, 'searchProduct'])->name('pos.search');
+        Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::get('/pos/receipt/{sale}', [PosController::class, 'receipt'])->name('pos.receipt');
+        Route::get('/pos/reprint/{sale}', [PosController::class, 'reprint'])->name('pos.reprint');
+    });
 
     // POS Returns & Exchanges
     Route::get('/returns', [PosReturnController::class, 'index'])->name('returns.index');
