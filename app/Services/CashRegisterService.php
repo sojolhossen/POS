@@ -167,4 +167,19 @@ class CashRegisterService
             $register->decrement('cash_in_hand_expected', $amount);
         }
     }
+
+    /**
+     * Record cash expense amount in the daily register.
+     */
+    public function recordCashExpense(Store $store, float $amount): void
+    {
+        $today = now()->format('Y-m-d');
+        $register = DailyCashRegister::where('store_id', $store->id)
+            ->where('business_date', $today)
+            ->first();
+
+        if ($register && $register->isOpen()) {
+            $register->decrement('cash_in_hand_expected', $amount);
+        }
+    }
 }

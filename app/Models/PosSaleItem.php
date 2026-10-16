@@ -36,9 +36,19 @@ class PosSaleItem extends Model
         return $this->belongsTo(PosSale::class);
     }
 
+    public function sale()
+    {
+        return $this->belongsTo(PosSale::class, 'pos_sale_id');
+    }
+
     public function productVariant()
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
     public function returnableQuantity(): int

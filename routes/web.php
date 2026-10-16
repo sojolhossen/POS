@@ -229,4 +229,61 @@ Route::middleware(['auth'])->group(function () {
     // Customers & Loyalty
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+
+    // ==========================================
+    // MASTER PROMPT 3 ROUTES
+    // ==========================================
+
+    // Financial Accounts (Super Admin & Accountant)
+    Route::middleware('role:super_admin,accountant')->group(function () {
+        Route::get('/financial-accounts', [\App\Http\Controllers\FinancialAccountController::class, 'index'])->name('financial-accounts.index');
+        Route::post('/financial-accounts', [\App\Http\Controllers\FinancialAccountController::class, 'store'])->name('financial-accounts.store');
+        Route::post('/financial-accounts/transfer', [\App\Http\Controllers\FinancialAccountController::class, 'transfer'])->name('financial-accounts.transfer');
+        Route::post('/financial-accounts/transactions/{transaction}/reconcile', [\App\Http\Controllers\FinancialAccountController::class, 'reconcile'])->name('financial-accounts.reconcile');
+    });
+
+    // Expense Management
+    Route::get('/expenses', [\App\Http\Controllers\ExpenseController::class, 'index'])->name('expenses.index');
+    Route::get('/expenses/create', [\App\Http\Controllers\ExpenseController::class, 'create'])->name('expenses.create');
+    Route::post('/expenses', [\App\Http\Controllers\ExpenseController::class, 'store'])->name('expenses.store');
+    Route::post('/expenses/{expense}/approve', [\App\Http\Controllers\ExpenseController::class, 'approve'])->name('expenses.approve');
+    Route::post('/expenses/{expense}/reject', [\App\Http\Controllers\ExpenseController::class, 'reject'])->name('expenses.reject');
+    Route::post('/expenses/{expense}/pay', [\App\Http\Controllers\ExpenseController::class, 'pay'])->name('expenses.pay');
+
+    // Employee Records
+    Route::get('/employees', [\App\Http\Controllers\EmployeeController::class, 'index'])->name('employees.index');
+    Route::get('/employees/create', [\App\Http\Controllers\EmployeeController::class, 'create'])->name('employees.create');
+    Route::post('/employees', [\App\Http\Controllers\EmployeeController::class, 'store'])->name('employees.store');
+    Route::get('/employees/{employee}', [\App\Http\Controllers\EmployeeController::class, 'show'])->name('employees.show');
+
+    // Attendance
+    Route::get('/attendance', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('/attendance', [\App\Http\Controllers\AttendanceController::class, 'store'])->name('attendance.store');
+    Route::post('/attendance/{attendance}/correct', [\App\Http\Controllers\AttendanceController::class, 'correct'])->name('attendance.correct');
+
+    // Payroll & Salary Advances
+    Route::get('/payroll', [\App\Http\Controllers\PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('/payroll/advance', [\App\Http\Controllers\PayrollController::class, 'advance'])->name('payroll.advance');
+    Route::post('/payroll/pay', [\App\Http\Controllers\PayrollController::class, 'pay'])->name('payroll.pay');
+
+    // Financial Reports & Exports
+    Route::get('/reports/financial', [\App\Http\Controllers\ReportController::class, 'financial'])->name('reports.financial');
+    Route::get('/reports/cash', [\App\Http\Controllers\ReportController::class, 'cash'])->name('reports.cash');
+    Route::get('/reports/slow-moving', [\App\Http\Controllers\ReportController::class, 'slowMoving'])->name('reports.slow-moving');
+    Route::get('/reports/slow_moving', [\App\Http\Controllers\ReportController::class, 'slowMoving'])->name('reports.slow_moving');
+    Route::get('/reports/store-comparison', [\App\Http\Controllers\ReportController::class, 'storeComparison'])->name('reports.store-comparison');
+    Route::get('/reports/store_comparison', [\App\Http\Controllers\ReportController::class, 'storeComparison'])->name('reports.store_comparison');
+    Route::get('/reports/export', [\App\Http\Controllers\ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/inventory', [\App\Http\Controllers\ReportController::class, 'slowMoving'])->name('reports.inventory');
+
+    // Controlled Data Imports (Super Admin ONLY)
+    Route::middleware('role:super_admin')->group(function () {
+        Route::get('/imports', [\App\Http\Controllers\DataImportController::class, 'index'])->name('imports.index');
+        Route::post('/imports/upload', [\App\Http\Controllers\DataImportController::class, 'upload'])->name('imports.upload');
+        Route::get('/imports/{import}/preview', [\App\Http\Controllers\DataImportController::class, 'preview'])->name('imports.preview');
+        Route::post('/imports/{import}/confirm', [\App\Http\Controllers\DataImportController::class, 'confirm'])->name('imports.confirm');
+    });
+
+    // Cash register route alias for notifications
+    Route::get('/cash-register', fn() => redirect()->route('daily-registers.index'))->name('cash-register.index');
 });

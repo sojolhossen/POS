@@ -1,0 +1,27 @@
+{
+  "mode": "implement",
+  "objective": "Clothing Store Management System — Master Prompt 3 of 4: Accounting, Financial Reports, HR, Dashboards, Notifications & Data Management",
+  "acceptance_criteria": [
+    "Chart of Accounts and Financial Accounts (Cash, bKash, Nagad, Rocket, Bank, Card Settlement, Supplier Accounts) with atomic transfers, fees, and reconciliation",
+    "Categorized Expense Management with configurable Super Admin approval thresholds and cash control integration",
+    "Employee Management, Manual Attendance, and Salary Management (Advances, Partial Payments, Outstanding Balances, Duplicate Prevention)",
+    "Financial Reporting & Inventory Costing: Net Sales Revenue, COGS (WAC), Gross Profit, Operating Profit, Tax/VAT reporting",
+    "Store-Level Cash Reconciliation integrated with daily closing/opening controls and discrepancy audit",
+    "Role-specific Dashboards for Super Admin, Store Manager, Cashier, Warehouse Staff, and Accountant",
+    "Comprehensive Reporting & Filtering (Sales, Profit, Expenses, Cash, Payments, Suppliers, Stock Valuation, Slow-Moving Stock, Attendance, Salaries)",
+    "Scheduled Reports and Multi-format Exports (PDF, Excel/CSV) with formula injection protection and secure temporary files",
+    "Controlled Data Import/Export Engine with validation preview, duplicate detection, chunking, and idempotency",
+    "Notifications and Alerts (Low stock, Supplier dues, Transfer delays, Large expense approvals, Cash closing reminders) with observable delivery logging",
+    "Scheduled Tasks via Laravel Scheduler (Low-stock checks, due reminders, transfer delays, daily summaries, cleanup)",
+    "Automated test suite passing 100% with zero regression on Phase 1 and 2 tests"
+  ],
+  "non_goals": [
+    "Do not implement shift-management or complex biometrics (manual store attendance only)",
+    "Do not implement offline sales or sync queues",
+    "Do not hardcode arbitrary expense thresholds; make them configurable"
+  ],
+  "risk": "high",
+  "budget": "deep",
+  "allowed_write_scope": ["*"],
+  "verification": "full"
+}
