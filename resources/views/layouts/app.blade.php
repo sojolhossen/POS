@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" 
+      x-data="{ 
+          darkMode: localStorage.getItem('pos_theme') === 'dark' || '{{ auth()->user()?->theme }}' === 'dark',
+          sidebarOpen: false,
+          isOnline: navigator.onLine,
+          checkConnectivity() {
+              fetch('{{ route('api.ping') }}')
+                  .then(res => { this.isOnline = res.ok; })
+                  .catch(() => { this.isOnline = false; });
+          }
+      }" 
+      x-init="
+          $watch('darkMode', val => localStorage.setItem('pos_theme', val ? 'dark' : 'light'));
+          window.addEventListener('online', () => isOnline = true);
+          window.addEventListener('offline', () => isOnline = false);
+          setInterval(() => checkConnectivity(), 25000);
+      "
+      :class="{ 'dark': darkMode }">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>@yield('title', __('messages.app_name')) — FashionPOS BD</title>
+
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Bengali', system-ui, sans-serif;
+        }
+        [x-cloak] { display: none !important; }
+        @media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+    @stack('styles')
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
+
+    <!-- CONNECTIVITY SAFEGUARD MODAL (Section 9) -->
+    <div x-cloak x-show="!isOnline" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+        <div class="bg-white dark:bg-slate-900 border-2 border-rose-500 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl animate-pulse">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 4.243a9 9 0 01-12.728 0m0 0l2.829-2.829m-2.829 2.829L3 21m2.829-12.728a5 5 0 017.072 0m-7.072 0L3 3m18 0l-2.828 2.828" />
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-rose-600 dark:text-rose-400 mb-2">{{ __('messages.offline_banner_title') }}</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                {{ __('messages.offline_banner_desc') }}
+            </p>
+            <button @click="checkConnectivity()" class="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-medium transition shadow-lg shadow-rose-600/30">
+                Retry Server Connection
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR -->
+        <aside class="no-print fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 lg:static lg:translate-x-0"
+               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+            
+            <!-- Logo & Brand Header -->
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-800">
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 text-white flex items-center justify-center font-extrabold text-xl shadow-lg shadow-indigo-500/30">
+                        FP
+                    </div>
+                    <div>
+                        <div class="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white leading-none">FashionPOS</div>
+                        <div class="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 mt-0.5">Multi-Store Retail</div>
+                    </div>
+                </a>
+                <button @click="sidebarOpen = false" class="lg:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Current Store Indicator -->
+            <div class="p-3 mx-4 my-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">Active Location</div>
+                <div class="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                    @if(auth()->user()->isSuperAdmin())
+                        All Stores & Central Hub
+                    @elseif(auth()->user()->store)
+                        {{ auth()->user()->store->name }} ({{ auth()->user()->store->code }})
+                    @else
+                        Unassigned Location
+                    @endif
+                </div>
+            </div>
+
+            <!-- Nav Links -->
+            <nav class="flex-1 overflow-y-auto px-4 py-2 space-y-1 text-sm font-medium">
+                <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('dashboard', 'home') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>{{ __('messages.dashboard') }}</span>
+                </a>
+
+                <a href="{{ route('stores.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('stores.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    <span>{{ __('messages.stores') }}</span>
+                </a>
+
+                <a href="{{ route('categories.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('categories.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <span>{{ __('messages.categories') }}</span>
+                </a>
+
+                <a href="{{ route('products.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('products.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    <span>{{ __('messages.products') }}</span>
+                </a>
+
+                <a href="{{ route('barcodes.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('barcodes.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                    <span>{{ __('messages.barcodes') }}</span>
+                </a>
+
+                <a href="{{ route('inventory.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('inventory.index') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                    <span>{{ __('messages.inventory') }}</span>
+                </a>
+
+                <a href="{{ route('inventory.ledger') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('inventory.ledger') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{{ __('messages.stock_movements') }}</span>
+                </a>
+
+                <a href="{{ route('stock-adjustments.index') }}" class="flex items-center justify-between px-3 py-2.5 rounded-xl transition {{ request()->routeIs('stock-adjustments.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        <span>{{ __('messages.stock_adjustments') }}</span>
+                    </div>
+                    @php
+                        $pendingAdjCount = \App\Models\StockAdjustment::where('status', 'pending')->count();
+                    @endphp
+                    @if($pendingAdjCount > 0 && auth()->user()->isSuperAdmin())
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white animate-pulse">
+                            {{ $pendingAdjCount }}
+                        </span>
+                    @endif
+                </a>
+
+                <a href="{{ route('stock-counts.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('stock-counts.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                    <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{{ __('messages.stock_counts') }}</span>
+                </a>
+
+                @if(auth()->user()->isSuperAdmin())
+                    <div class="pt-4 pb-1">
+                        <div class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Administration</div>
+                    </div>
+
+                    <a href="{{ route('staff.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('staff.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                        <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <span>{{ __('messages.staff') }}</span>
+                    </a>
+
+                    <a href="{{ route('audit.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition {{ request()->routeIs('audit.*') ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' }}">
+                        <svg class="w-5 h-5 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>{{ __('messages.audit_logs') }}</span>
+                    </a>
+                @endif
+            </nav>
+
+            <!-- Bottom User Card -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3 truncate">
+                    <div class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-sm">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    </div>
+                    <div class="truncate">
+                        <div class="text-xs font-bold truncate">{{ auth()->user()->name }}</div>
+                        <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                            {{ auth()->user()->role ? (is_object(auth()->user()->role) && method_exists(auth()->user()->role, 'label') ? auth()->user()->role->label() : (string) auth()->user()->role) : 'Staff User' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            
+            <!-- TOP NAVBAR -->
+            <header class="no-print h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between z-30">
+                <div class="flex items-center gap-3">
+                    <button @click="sidebarOpen = true" class="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <h1 class="text-lg font-bold text-slate-800 dark:text-slate-100 hidden sm:block">
+                        @yield('header', __('messages.dashboard'))
+                    </h1>
+                </div>
+
+                <!-- Right Header Controls -->
+                <div class="flex items-center gap-3">
+                    
+                    <!-- Language Switcher Form -->
+                    <form action="{{ route('locale.set') }}" method="POST" class="inline">
+                        @csrf
+                        <select name="locale" onchange="this.form.submit()" 
+                                class="text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 py-1.5 px-2.5 text-slate-700 dark:text-slate-200 cursor-pointer focus:ring-1 focus:ring-indigo-500">
+                            <option value="en" {{ app()->getLocale() === 'en' ? 'selected' : '' }}>English</option>
+                            <option value="bn" {{ app()->getLocale() === 'bn' ? 'selected' : '' }}>বাংলা (BN)</option>
+                        </select>
+                    </form>
+
+                    <!-- Dark Mode Toggle Button -->
+                    <button @click="darkMode = !darkMode" 
+                            class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                            title="Toggle Theme">
+                        <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg x-cloak x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </button>
+
+                    <!-- Logout Button -->
+                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" 
+                                class="text-xs font-semibold py-1.5 px-3 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-400 transition flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            <span>{{ __('messages.logout') }}</span>
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <!-- FLASH ALERTS -->
+            <div class="px-4 sm:px-6 pt-4">
+                @if(session('success'))
+                    <div class="mb-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-sm flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            <span>{{ session('success') }}</span>
+                        </div>
+                    </div>
+                @endif
+
+                @if(session('error') || $errors->any())
+                    <div class="mb-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-sm">
+                        <div class="flex items-center gap-2 font-bold mb-1">
+                            <svg class="w-5 h-5 text-rose-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            <span>{{ session('error') ?? 'Please check the form for errors:' }}</span>
+                        </div>
+                        @if($errors->any())
+                            <ul class="list-disc pl-7 space-y-0.5 text-xs">
+                                @foreach($errors->all() as $err)
+                                    <li>{{ $err }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
+                @endif
+            </div>
+
+            <!-- MAIN SCROLLABLE CONTENT BODY -->
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 pb-12">
+                @yield('content')
+            </main>
+        </div>
+    </div>
+
+    @stack('scripts')
+</body>
+</html>

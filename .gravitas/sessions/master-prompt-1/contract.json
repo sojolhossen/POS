@@ -1,0 +1,31 @@
+{
+  "mode": "implement",
+  "objective": "Clothing Store Management System — Master Prompt 1: Foundation, Database, Access Control & Core Inventory",
+  "acceptance_criteria": [
+    "Application installs and runs in the verified XAMPP PHP 8.2 & MySQL environment",
+    "Database migrations run successfully with strict foreign keys, unique constraints, and decimal money types",
+    "All five roles (Super Admin, Store Manager, Cashier, Warehouse Staff, Accountant) are protected by server-side authorization",
+    "Store scoping ensures Store Managers cannot access restricted data belonging to other stores",
+    "Single active session enforced; account deactivation immediately revokes sessions",
+    "Product catalog with categories, automatic concurrency-safe SKU generation (e.g. SH-000123), and no product-photo functionality",
+    "Variants with unique size/color constraints and unique Code 128 barcodes",
+    "Only Super Admin can change selling prices, retaining comprehensive price history",
+    "Barcode generation, reprinting retention, printable label templates, and camera/hardware scanning support",
+    "Stock ledger tracking all inventory movements, opening stock, warehouse receiving, and physical stock counts",
+    "Stock adjustment workflow requiring Super Admin approval before altering balances",
+    "Overselling prevention with row locking inside explicit database transactions",
+    "Audit logging for authentication, catalog, price, staff, and inventory operations without logging secrets",
+    "Bangla (bn) and English (en) localization, BDT (৳) currency, DD-MM-YYYY dates, light/dark themes",
+    "Online connectivity safeguard stopping business operations when disconnected",
+    "Comprehensive automated tests covering all 11 test suites with passing results"
+  ],
+  "non_goals": [
+    "Do not add product-photo functionality",
+    "Do not implement offline sales or offline transaction queues",
+    "Do not implement POS sales, receipts, or supplier accounting (deferred to Prompt 2)"
+  ],
+  "risk": "medium",
+  "budget": "deep",
+  "allowed_write_scope": ["*"],
+  "verification": "full"
+}

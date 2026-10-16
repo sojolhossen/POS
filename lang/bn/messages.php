@@ -1,0 +1,129 @@
+<?php
+
+return [
+    // App & Navigation
+    'app_name' => 'ফ্যাশন পিওএস — পোশাক স্টোর ম্যানেজমেন্ট',
+    'dashboard' => 'ড্যাশবোর্ড',
+    'stores' => 'রিটেইল স্টোর ও ওয়্যারহাউস',
+    'staff' => 'কর্মকর্তা ও কর্মচারী তালিকা',
+    'categories' => 'ক্যাটাগরি ও সাব-ক্যাটাগরি',
+    'products' => 'প্রোডাক্ট ক্যাটালগ ও ভ্যারিয়েন্ট',
+    'barcodes' => 'বারকোড লেবেল ও স্ক্যানার',
+    'inventory' => 'মজুত স্টক ও স্টক লেজার',
+    'stock_adjustments' => 'স্টক সমন্বয় (এডজাস্টমেন্ট)',
+    'stock_counts' => 'শারীরিক স্টক গণনা',
+    'audit_logs' => 'অডিট ট্রেইল ও লগ',
+    'login' => 'লগইন করুন',
+    'logout' => 'লগআউট',
+    'profile' => 'আমার প্রোফাইল',
+    'language' => 'ভাষা',
+    'theme' => 'থিম',
+    'light' => 'লাইট',
+    'dark' => 'ডার্ক',
+
+    // Roles
+    'role_super_admin' => 'সুপার অ্যাডমিন',
+    'role_store_manager' => 'স্টোর ম্যানেজার',
+    'role_cashier' => 'ক্যাশিয়ার',
+    'role_warehouse_staff' => 'ওয়্যারহাউস স্টাফ',
+    'role_accountant' => 'অ্যাকাউন্ট্যান্ট',
+
+    // Store attributes
+    'store_code' => 'স্টোর কোড',
+    'store_name' => 'স্টোরের নাম',
+    'store_type' => 'স্টোরের ধরন',
+    'retail_store' => 'রিটেইল আউটলেট',
+    'central_warehouse' => 'সেন্ট্রাল ওয়্যারহাউস',
+    'store_manager_assigned' => 'দায়িত্বপ্রাপ্ত ম্যানেজার',
+    'opening_hours' => 'খোলা / বন্ধের সময়সূচি',
+    'address' => 'ঠিকানা',
+    'phone' => 'যোগাযোগের নম্বর',
+    'status' => 'স্ট্যাটাস',
+    'active' => 'সক্রিয়',
+    'inactive' => 'নিষ্ক্রিয়',
+
+    // Product attributes
+    'product_name' => 'পোশাকের নাম',
+    'sku' => 'এসকেইউ (SKU)',
+    'category' => 'ক্যাটাগরি',
+    'subcategory' => 'সাব-ক্যাটাগরি',
+    'brand' => 'ব্র্যান্ড',
+    'season' => 'মৌসুম / কালেকশন',
+    'fabric' => 'ফেব্রিক / উপাদান',
+    'base_purchase_price' => 'ক্রয় মূল্য (খরচ)',
+    'base_selling_price' => 'বিক্রয় মূল্য (এমআরপি)',
+    'variants' => 'ভ্যারিয়েন্ট (সাইজ ও কালার)',
+    'size' => 'সাইজ',
+    'color' => 'রং',
+    'barcode' => 'বারকোড (Code 128)',
+    'print_labels' => 'বারকোড লেবেল প্রিন্ট',
+    'scan_barcode' => 'বারকোড স্ক্যান করুন',
+    'hardware_scanner_hint' => 'হার্ডওয়্যার স্ক্যানার দিয়ে স্ক্যান করুন অথবা ক্যামেরা ব্যবহার করুন',
+
+    // Pricing & Permissions
+    'price_history' => 'মূল্য পরিবর্তনের ইতিহাস',
+    'old_price' => 'পূর্ববর্তী মূল্য',
+    'new_price' => 'নতুন মূল্য',
+    'reason' => 'পরিবর্তনের কারণ',
+    'changed_by' => 'পরিবর্তনকারী',
+    'super_admin_price_only' => 'শুধুমাত্র সুপার অ্যাডমিন বিক্রয় মূল্য পরিবর্তন করতে পারেন।',
+
+    // Inventory & Ledger
+    'stock_on_hand' => 'বর্তমান মজুত',
+    'available_stock' => 'বিক্রয়যোগ্য স্টক',
+    'reorder_level' => 'রিঅর্ডার লেভেল',
+    'opening_stock' => 'প্রারম্ভিক স্টক',
+    'receive_warehouse' => 'সেন্ট্রাল ওয়্যারহাউসে স্টক গ্রহণ',
+    'stock_movements' => 'স্টক মুভমেন্ট লেজার',
+    'transaction_type' => 'লেনদেনের ধরন',
+    'quantity' => 'পরিমাণ',
+    'balance_after' => 'লেনদেন পরবর্তী অবশিষ্ট স্টক',
+    'unit_cost' => 'একক মূল্য',
+    'reference_number' => 'রেফারেন্স নম্বর',
+    'notes' => 'মন্তব্য / বিবরণ',
+    'adjustment_reason' => 'সমন্বয়ের কারণ (বাধ্যতামূলক)',
+    'proposed_quantity' => 'প্রস্তাবিত নতুন স্টক',
+    'adjustment_pending_approval' => 'স্টক সমন্বয়ের আবেদন জমা হয়েছে। সুপার অ্যাডমিনের অনুমোদনের অপেক্ষায়।',
+    'approved_by_admin' => 'সুপার অ্যাডমিন কর্তৃক অনুমোদিত',
+    'insufficient_stock' => 'অপর্যাপ্ত মজুত! এই অপারেশনের জন্য পর্যাপ্ত স্টক নেই।',
+
+    // Transaction Types
+    'tx_opening_balance' => 'প্রারম্ভিক স্টক ব্যালেন্স',
+    'tx_warehouse_receive' => 'ওয়্যারহাউসে পণ্য গ্রহণ',
+    'tx_adjustment_increase' => 'সমন্বয় (স্টক বৃদ্ধি)',
+    'tx_adjustment_decrease' => 'সমন্বয় (স্টক হ্রাস)',
+    'tx_transfer_dispatch' => 'ট্রান্সফার প্রেরণ',
+    'tx_transfer_receive' => 'ট্রান্সফার গ্রহণ',
+    'tx_sale' => 'পয়েন্ট অফ সেল বিক্রয়',
+    'tx_return' => 'গ্রাহক ফেরত',
+    'tx_reversal' => 'লেজার সংশোধন / রিভার্সাল',
+
+    // Statuses
+    'status_pending' => 'অনুমোদনের অপেক্ষায়',
+    'status_approved' => 'অনুমোদিত',
+    'status_rejected' => 'বাতিলকৃত',
+
+    // Auth & Security alerts
+    'account_deactivated' => 'আপনার অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। যোগাযোগ করুন সুপার অ্যাডমিনের সাথে।',
+    'session_revoked_by_new_login' => 'এই অ্যাকাউন্টে অন্য একটি ডিভাইস বা ব্রাউজার থেকে লগইন করা হয়েছে। আপনার বর্তমান সেশনটি সমাপ্ত করা হলো।',
+    'unauthorized_role_action' => 'অননুমোদিত প্রবেশাধিকার: আপনার এই কাজটি সম্পাদনের অনুমতি নেই।',
+    'unauthorized_store_access' => 'অননুমোদিত প্রবেশাধিকার: আপনি অন্য কোনো আউটলেটের তথ্য দেখতে বা পরিচালনা করতে পারবেন না।',
+    'password_complexity_requirement' => 'পাসওয়ার্ড অবশ্যই কমপক্ষে ৮ অক্ষরের হতে হবে এবং বর্ণ, সংখ্যা ও বিশেষ চিহ্নের মিশ্রণ থাকতে হবে।',
+
+    // Connectivity
+    'offline_banner_title' => 'ইন্টারনেট সংযোগ বিচ্ছিন্ন',
+    'offline_banner_desc' => 'ব্যবসা পরিচালনার জন্য ইন্টারনেট সংযোগ আবশ্যক। নেটওয়ার্ক পুনঃসংযোগ না হওয়া পর্যন্ত কার্যক্রম নিরাপদে স্থগিত রাখা হয়েছে।',
+
+    // Common Actions
+    'save' => 'সংরক্ষণ করুন',
+    'create' => 'নতুন তৈরি করুন',
+    'edit' => 'সম্পাদনা',
+    'delete' => 'নিষ্ক্রিয় / মুছুন',
+    'cancel' => 'বাতিল',
+    'search' => 'নাম, এসকেইউ অথবা বারকোড দিয়ে খুঁজুন...',
+    'filter' => 'ফিল্টার',
+    'export' => 'এক্সপোর্ট',
+    'actions' => 'কার্যক্রম',
+    'date' => 'তারিখ',
+    'currency' => '৳',
+];

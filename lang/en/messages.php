@@ -1,0 +1,129 @@
+<?php
+
+return [
+    // App & Navigation
+    'app_name' => 'FashionPOS — Multi-Store Clothing Management',
+    'dashboard' => 'Dashboard',
+    'stores' => 'Retail Stores & Warehouses',
+    'staff' => 'Staff Accounts',
+    'categories' => 'Categories & Subcategories',
+    'products' => 'Product Catalog & Variants',
+    'barcodes' => 'Barcode Labels & Scanning',
+    'inventory' => 'Stock Balances & Ledger',
+    'stock_adjustments' => 'Stock Adjustments',
+    'stock_counts' => 'Physical Stock Counts',
+    'audit_logs' => 'Audit Trail',
+    'login' => 'Log In',
+    'logout' => 'Log Out',
+    'profile' => 'My Profile',
+    'language' => 'Language',
+    'theme' => 'Theme',
+    'light' => 'Light',
+    'dark' => 'Dark',
+
+    // Roles
+    'role_super_admin' => 'Super Admin',
+    'role_store_manager' => 'Store Manager',
+    'role_cashier' => 'Cashier',
+    'role_warehouse_staff' => 'Warehouse Staff',
+    'role_accountant' => 'Accountant',
+
+    // Store attributes
+    'store_code' => 'Store Code',
+    'store_name' => 'Store Name',
+    'store_type' => 'Store Type',
+    'retail_store' => 'Retail Outlet',
+    'central_warehouse' => 'Central Warehouse',
+    'store_manager_assigned' => 'Assigned Manager',
+    'opening_hours' => 'Opening / Closing Hours',
+    'address' => 'Physical Address',
+    'phone' => 'Contact Number',
+    'status' => 'Status',
+    'active' => 'Active',
+    'inactive' => 'Inactive',
+
+    // Product attributes
+    'product_name' => 'Product Name',
+    'sku' => 'SKU Code',
+    'category' => 'Category',
+    'subcategory' => 'Subcategory',
+    'brand' => 'Brand',
+    'season' => 'Season / Collection',
+    'fabric' => 'Fabric / Material',
+    'base_purchase_price' => 'Purchase Price (Cost)',
+    'base_selling_price' => 'Selling Price (MRP)',
+    'variants' => 'Variants (Size & Color)',
+    'size' => 'Size',
+    'color' => 'Color',
+    'barcode' => 'Barcode (Code 128)',
+    'print_labels' => 'Print Barcode Labels',
+    'scan_barcode' => 'Scan Barcode',
+    'hardware_scanner_hint' => 'Point hardware scanner or use device camera',
+
+    // Pricing & Permissions
+    'price_history' => 'Price Change Log',
+    'old_price' => 'Old Price',
+    'new_price' => 'New Price',
+    'reason' => 'Reason',
+    'changed_by' => 'Changed By',
+    'super_admin_price_only' => 'Only the Super Admin may change selling prices.',
+
+    // Inventory & Ledger
+    'stock_on_hand' => 'Stock On Hand',
+    'available_stock' => 'Available Stock',
+    'reorder_level' => 'Reorder Level',
+    'opening_stock' => 'Opening Stock',
+    'receive_warehouse' => 'Receive into Warehouse',
+    'stock_movements' => 'Stock Movement Ledger',
+    'transaction_type' => 'Transaction Type',
+    'quantity' => 'Quantity',
+    'balance_after' => 'Balance After',
+    'unit_cost' => 'Unit Cost',
+    'reference_number' => 'Reference #',
+    'notes' => 'Notes / Remarks',
+    'adjustment_reason' => 'Adjustment Reason (Mandatory)',
+    'proposed_quantity' => 'Proposed Quantity',
+    'adjustment_pending_approval' => 'Stock adjustment submitted. Awaiting Super Admin approval.',
+    'approved_by_admin' => 'Approved by Super Admin',
+    'insufficient_stock' => 'Insufficient stock available for this operation.',
+
+    // Transaction Types
+    'tx_opening_balance' => 'Opening Stock Balance',
+    'tx_warehouse_receive' => 'Warehouse Intake',
+    'tx_adjustment_increase' => 'Adjustment (Stock Increase)',
+    'tx_adjustment_decrease' => 'Adjustment (Stock Decrease)',
+    'tx_transfer_dispatch' => 'Transfer Dispatched',
+    'tx_transfer_receive' => 'Transfer Received',
+    'tx_sale' => 'POS Sale',
+    'tx_return' => 'Customer Return',
+    'tx_reversal' => 'Ledger Correction / Reversal',
+
+    // Statuses
+    'status_pending' => 'Pending Approval',
+    'status_approved' => 'Approved',
+    'status_rejected' => 'Rejected',
+
+    // Auth & Security alerts
+    'account_deactivated' => 'Your account has been deactivated. Access is denied.',
+    'session_revoked_by_new_login' => 'This account was logged in from another device/session. Previous session has been terminated.',
+    'unauthorized_role_action' => 'Access denied: You do not possess the required role permissions.',
+    'unauthorized_store_access' => 'Access denied: You are not authorized to view or manage another retail store.',
+    'password_complexity_requirement' => 'Password must be at least 8 characters and include letters, numbers, and special characters.',
+
+    // Connectivity
+    'offline_banner_title' => 'Internet Connectivity Lost',
+    'offline_banner_desc' => 'Active internet connection is mandatory. Business operations are safely paused until network is restored.',
+
+    // Common Actions
+    'save' => 'Save Changes',
+    'create' => 'Create New',
+    'edit' => 'Edit',
+    'delete' => 'Deactivate / Remove',
+    'cancel' => 'Cancel',
+    'search' => 'Search by Name, SKU or Barcode...',
+    'filter' => 'Filter',
+    'export' => 'Export',
+    'actions' => 'Actions',
+    'date' => 'Date',
+    'currency' => '৳',
+];
