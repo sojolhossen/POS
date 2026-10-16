@@ -28,5 +28,7 @@
   "risk": "high",
   "budget": "deep",
   "allowed_write_scope": ["*"],
-  "verification": "full"
+  "verification": "full",
+  "status": "completed",
+  "test_summary": "47 passed (189 assertions), 0 failures, 100% test pass rate"
 }
