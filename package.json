@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "alpinejs": "^3.17.4",
+        "chart.js": "^4.5.1",
         "html5-qrcode": "^2.3.8"
     }
 }

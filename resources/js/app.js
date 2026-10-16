@@ -2,8 +2,11 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
+import Chart from 'chart.js/auto';
+
 window.Alpine = Alpine;
 window.Html5QrcodeScanner = Html5QrcodeScanner;
+window.Chart = Chart;
 
 // Initialize hardware barcode scanner listener (rapid keystroke buffer)
 window.initHardwareScanner = function(callback) {
