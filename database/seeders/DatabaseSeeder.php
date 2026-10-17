@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\UserRole;
+use App\Models\AppSetting;
 use App\Models\Category;
 use App\Models\PriceHistory;
 use App\Models\Product;
@@ -307,5 +308,17 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        // 10. Default System Settings & Branding
+        AppSetting::set('vat_enabled', '0', 'tax');
+        AppSetting::set('vat_rate', '0.00', 'tax');
+        AppSetting::set('vat_label', 'Tax / VAT', 'tax');
+        AppSetting::set('app_name', 'SR Fashion', 'branding');
+        AppSetting::set('app_tagline', 'Smart Retail POS & ERP System', 'branding');
+        AppSetting::set('company_address', 'Dhaka gazipur chondra, pollibudut, kaliakor, modina garments', 'branding');
+        AppSetting::set('company_phone', '01310997902', 'branding');
+        AppSetting::set('company_email', 'sojolstudent66@gmail.com', 'branding');
+        AppSetting::set('receipt_footer', 'Thank you for shopping with us!', 'branding');
+        AppSetting::set('app_logo', 'branding/vTaThSwQnvXxYivSd1AokiRtwXPzJsxJSfhGVV1v.png', 'branding');
     }
 }

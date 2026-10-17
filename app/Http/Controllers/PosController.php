@@ -79,12 +79,33 @@ class PosController extends Controller
                 'name' => $v->product->name,
                 'size' => $v->size,
                 'color' => $v->color,
+                'category_id' => $v->product->category_id,
                 'price' => (float) $v->effective_selling_price,
                 'available_stock' => $balance ? $balance->available_quantity : 0,
             ];
         }
 
         return response()->json($results);
+    }
+
+    /**
+     * Fast search endpoint for customer lookup by phone or name.
+     */
+    public function searchCustomer(Request $request)
+    {
+        $query = trim((string) $request->input('q', ''));
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $customers = Customer::query()
+            ->where('phone', 'like', "%{$query}%")
+            ->orWhere('name', 'like', "%{$query}%")
+            ->orderByDesc('updated_at')
+            ->limit(8)
+            ->get(['id', 'name', 'phone', 'loyalty_points', 'total_spend']);
+
+        return response()->json($customers);
     }
 
     /**
@@ -175,5 +196,88 @@ class PosController extends Controller
     {
         $sale->load(['store', 'cashier', 'customer', 'promotion', 'items', 'payments']);
         return view('pos.receipt', ['sale' => $sale, 'isReprint' => true]);
+    }
+
+    /**
+     * View Retail Sales History and Invoices with detailed breakdowns, filters, and totals.
+     */
+    public function salesHistory(Request $request)
+    {
+        $user = auth()->user();
+
+        $query = PosSale::with(['store', 'cashier', 'customer', 'items.productVariant.product', 'payments'])
+            ->latest('id');
+
+        // Scoping for non-superadmin users
+        if (($user->isStoreManager() || $user->isCashier()) && $user->store_id) {
+            $query->where('store_id', $user->store_id);
+        } elseif ($request->filled('store_id')) {
+            $query->where('store_id', $request->input('store_id'));
+        }
+
+        // Search by invoice or customer phone/name
+        if ($request->filled('search')) {
+            $search = trim($request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                  ->orWhere('customer_phone', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by date range
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->input('date_to'));
+        }
+
+        // Filter by payment method
+        if ($request->filled('payment_method')) {
+            $method = $request->input('payment_method');
+            $query->whereHas('payments', function ($pq) use ($method) {
+                $pq->where('payment_method', $method);
+            });
+        }
+
+        // Filter by cashier
+        if ($request->filled('cashier_id')) {
+            $query->where('cashier_id', $request->input('cashier_id'));
+        }
+
+        // Statistics aggregations based on current filter (before pagination)
+        $statsQuery = clone $query;
+        $totalSalesAmount = (float) $statsQuery->sum('total_payable');
+        $totalInvoicesCount = $statsQuery->count();
+        $totalDiscountAmount = (float) $statsQuery->sum('discount_amount');
+
+        // Payment split totals
+        $saleIds = (clone $query)->pluck('id');
+        $cashTotal = (float) \App\Models\PosSalePayment::whereIn('pos_sale_id', $saleIds)
+            ->where('payment_method', 'cash')
+            ->sum('amount');
+        $digitalTotal = (float) \App\Models\PosSalePayment::whereIn('pos_sale_id', $saleIds)
+            ->whereIn('payment_method', ['bkash', 'nagad', 'rocket', 'card'])
+            ->sum('amount');
+
+        $sales = $query->paginate(20)->withQueryString();
+        $stores = Store::orderBy('name')->get();
+        $cashiers = \App\Models\User::whereIn('role', [
+            \App\Enums\UserRole::CASHIER,
+            \App\Enums\UserRole::STORE_MANAGER,
+            \App\Enums\UserRole::SUPER_ADMIN,
+        ])->orderBy('name')->get();
+
+        return view('pos.history', compact(
+            'sales',
+            'stores',
+            'cashiers',
+            'totalSalesAmount',
+            'totalInvoicesCount',
+            'totalDiscountAmount',
+            'cashTotal',
+            'digitalTotal'
+        ));
     }
 }

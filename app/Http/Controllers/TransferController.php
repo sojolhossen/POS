@@ -17,9 +17,9 @@ class TransferController extends Controller
 
     public function index(Request $request)
     {
-        $query = StockTransfer::with(['sourceStore', 'destinationStore', 'creator', 'items.productVariant'])->latest();
+        $query = StockTransfer::with(['sourceStore', 'destinationStore', 'creator', 'approver', 'dispatcher', 'receiver', 'items.productVariant'])->latest();
 
-        // Enforce store scoping if user is store manager
+        // Enforce store scoping if user is store manager or cashier
         if (auth()->user()->isStoreManager() && auth()->user()->store_id) {
             $userStoreId = auth()->user()->store_id;
             $query->where(function ($q) use ($userStoreId) {
@@ -77,15 +77,53 @@ class TransferController extends Controller
 
     public function show(StockTransfer $transfer)
     {
-        $transfer->load(['sourceStore', 'destinationStore', 'items.productVariant.product', 'creator', 'approver', 'dispatcher', 'receiver']);
+        $transfer->load([
+            'sourceStore',
+            'destinationStore',
+            'items.productVariant.product',
+            'creator',
+            'approver',
+            'dispatcher',
+            'receiver',
+            'auditLogs.user'
+        ]);
         return view('transfers.show', compact('transfer'));
+    }
+
+    public function printChallan(Request $request, StockTransfer $transfer)
+    {
+        $transfer->load([
+            'sourceStore',
+            'destinationStore',
+            'items.productVariant.product',
+            'creator',
+            'approver',
+            'dispatcher',
+            'receiver',
+            'auditLogs.user'
+        ]);
+
+        $copy = $request->query('copy');
+        if (!$copy || $copy === 'auto') {
+            $userRole = auth()->user()?->role instanceof \App\Enums\UserRole
+                ? auth()->user()->role->value
+                : (string) (auth()->user()?->role ?? 'store_manager');
+            $copy = $userRole;
+        }
+
+        return view('transfers.print', compact('transfer', 'copy'));
     }
 
     public function approve(StockTransfer $transfer)
     {
+        // STRICT: Only Super Admin can approve stock transfers
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized! Only Super Admin can approve stock transfers.');
+        }
+
         try {
             $this->transferService->approveTransfer($transfer, auth()->user());
-            return redirect()->route('transfers.show', $transfer)->with('success', "Transfer {$transfer->reference_number} approved for dispatch.");
+            return redirect()->route('transfers.show', $transfer)->with('success', "Transfer {$transfer->reference_number} approved by Super Admin. Stock is authorized for dispatch.");
         } catch (Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -122,12 +160,24 @@ class TransferController extends Controller
             return redirect()->route('transfers.show', $transfer)->with('error', 'Transfer is not currently in transit.');
         }
 
+        $user = auth()->user();
+        // Any user belonging to destination store (or Super Admin) can receive
+        if (!$user->isSuperAdmin() && $user->store_id && $user->store_id != $transfer->destination_store_id) {
+            return redirect()->route('transfers.show', $transfer)->with('error', 'Only staff/users of destination store (' . $transfer->destinationStore->name . ') can receive this transfer.');
+        }
+
         $transfer->load(['sourceStore', 'destinationStore', 'items.productVariant.product']);
         return view('transfers.receive', compact('transfer'));
     }
 
     public function receiveStore(Request $request, StockTransfer $transfer)
     {
+        $user = auth()->user();
+        // Any user belonging to destination store (or Super Admin) can receive
+        if (!$user->isSuperAdmin() && $user->store_id && $user->store_id != $transfer->destination_store_id) {
+            return redirect()->route('transfers.show', $transfer)->with('error', 'Only staff/users of destination store (' . $transfer->destinationStore->name . ') can receive this transfer.');
+        }
+
         $validated = $request->validate([
             'received_quantities' => 'required|array',
             'damaged_quantities' => 'nullable|array',
@@ -138,12 +188,12 @@ class TransferController extends Controller
             $this->transferService->receiveTransfer(
                 $transfer,
                 $validated['received_quantities'],
-                auth()->user(),
+                $user,
                 $validated['damaged_quantities'] ?? [],
                 $validated['discrepancy_reasons'] ?? []
             );
 
-            return redirect()->route('transfers.show', $transfer)->with('success', "Transfer {$transfer->reference_number} confirmed. Destination stock updated.");
+            return redirect()->route('transfers.show', $transfer)->with('success', "Transfer {$transfer->reference_number} confirmed & received by {$user->name}. Destination inventory updated.");
         } catch (Exception $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }

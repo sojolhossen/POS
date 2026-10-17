@@ -9,7 +9,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ __('messages.login') }} — FashionPOS BD</title>
+    <title>{{ __('messages.login') }} — {{ \App\Models\AppSetting::getAppName('FashionPOS') }}</title>
+    @if(\App\Models\AppSetting::getAppFavicon())
+        <link rel="icon" href="{{ \App\Models\AppSetting::getAppFavicon() }}">
+    @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,15 +22,29 @@
 </head>
 <body class="bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-sans antialiased transition-colors duration-200">
 
+    @php
+        $customLogo = \App\Models\AppSetting::getAppLogo();
+        $siteAppName = \App\Models\AppSetting::getAppName('FashionPOS');
+        $siteTagline = \App\Models\AppSetting::getAppTagline('Enterprise Retail ERP');
+        $words = preg_split('/\s+/', trim($siteAppName));
+        $initials = count($words) >= 2 
+            ? mb_strtoupper(mb_substr($words[0], 0, 1) . mb_substr($words[1], 0, 1))
+            : mb_strtoupper(mb_substr($siteAppName, 0, 2));
+    @endphp
+
     <!-- TOP UTILITY BAR (Language & Theme switchers) -->
     <header class="w-full px-6 py-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md sticky top-0 z-20">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-sm tracking-tighter shadow-md shadow-indigo-600/20">
-                FP
-            </div>
+            @if($customLogo)
+                <img src="{{ $customLogo }}" alt="{{ $siteAppName }}" class="w-8 h-8 object-contain rounded-lg bg-white dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 shadow-sm flex-shrink-0">
+            @else
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-sm tracking-tighter shadow-md shadow-indigo-600/20 flex-shrink-0">
+                    {{ $initials }}
+                </div>
+            @endif
             <div>
-                <span class="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">FashionPOS</span>
-                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-1 hidden sm:inline">• Enterprise Retail ERP</span>
+                <span class="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">{{ $siteAppName }}</span>
+                <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 ml-1 hidden sm:inline">• {{ $siteTagline }}</span>
             </div>
         </div>
 

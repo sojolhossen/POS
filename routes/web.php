@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BarcodeController;
+use App\Http\Controllers\BrandingSettingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ConnectivityController;
 use App\Http\Controllers\CustomerController;
@@ -15,12 +16,14 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceivingController;
+use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StockAdjustmentController;
 use App\Http\Controllers\StockCountController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierReturnController;
+use App\Http\Controllers\TaxSettingController;
 use App\Http\Controllers\TransferController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +65,19 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('staff', StaffController::class)->except(['show', 'destroy']);
         Route::post('/staff/{staff}/reset-password', [StaffController::class, 'resetPassword'])->name('staff.reset-password');
 
+        // Role & Module Permission Access Controls (Shop Owner / Super Admin ONLY)
+        Route::get('/admin/roles-permissions', [RolePermissionController::class, 'index'])->name('roles.permissions.index');
+        Route::post('/admin/roles-permissions', [RolePermissionController::class, 'update'])->name('roles.permissions.update');
+        Route::post('/admin/roles-permissions/reset', [RolePermissionController::class, 'resetDefaults'])->name('roles.permissions.reset');
+
+        // Tax / VAT Settings (Shop Owner / Super Admin ONLY)
+        Route::get('/admin/tax-settings', [TaxSettingController::class, 'index'])->name('admin.tax.index');
+        Route::post('/admin/tax-settings', [TaxSettingController::class, 'update'])->name('admin.tax.update');
+
+        // Site Branding & Identity Settings (Shop Owner / Super Admin ONLY)
+        Route::get('/admin/branding-settings', [BrandingSettingController::class, 'index'])->name('admin.branding.index');
+        Route::post('/admin/branding-settings', [BrandingSettingController::class, 'update'])->name('admin.branding.update');
+
         // Audit Trail (Super Admin ONLY)
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit.index');
 
@@ -97,7 +113,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Barcode Labels & Scanner Workstation
     Route::get('/barcodes', [BarcodeController::class, 'index'])->name('barcodes.index');
-    Route::post('/barcodes/print', [BarcodeController::class, 'printLabels'])->name('barcodes.print');
+    Route::match(['get', 'post'], '/barcodes/print', [BarcodeController::class, 'printLabels'])->name('barcodes.print');
     Route::post('/barcodes/scan-lookup', [BarcodeController::class, 'scanLookup'])->name('barcodes.scan-lookup');
 
     // Inventory & Ledger
@@ -180,9 +196,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/transfers/create', [TransferController::class, 'create'])->name('transfers.create');
     Route::post('/transfers', [TransferController::class, 'store'])->name('transfers.store');
     Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
+    Route::get('/transfers/{transfer}/print', [TransferController::class, 'printChallan'])->name('transfers.print');
 
+    // Super Admin Stock Transfer Approval ONLY
     Route::post('/transfers/{transfer}/approve', [TransferController::class, 'approve'])
-        ->middleware('role:super_admin,store_manager')
+        ->middleware('role:super_admin')
         ->name('transfers.approve');
 
     Route::get('/transfers/{transfer}/dispatch', [TransferController::class, 'dispatchView'])
@@ -192,20 +210,27 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:super_admin,store_manager,warehouse_staff')
         ->name('transfers.dispatch.store');
 
+    // Receiving at Destination Store (Any authorized user of destination store or Super Admin)
     Route::get('/transfers/{transfer}/receive', [TransferController::class, 'receiveView'])
-        ->middleware('role:super_admin,store_manager,warehouse_staff')
+        ->middleware('role:super_admin,store_manager,warehouse_staff,cashier')
         ->name('transfers.receive.view');
     Route::post('/transfers/{transfer}/receive', [TransferController::class, 'receiveStore'])
-        ->middleware('role:super_admin,store_manager,warehouse_staff')
+        ->middleware('role:super_admin,store_manager,warehouse_staff,cashier')
         ->name('transfers.receive.store');
 
     // Point of Sale (POS) Checkout (Authorized front-of-house roles ONLY)
-    Route::middleware('role:super_admin,store_manager,cashier')->group(function () {
+    Route::middleware(['role:super_admin,store_manager,cashier', 'module:pos'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::get('/pos/search', [PosController::class, 'searchProduct'])->name('pos.search');
+        Route::get('/pos/customers/search', [PosController::class, 'searchCustomer'])->name('pos.customers.search');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
         Route::get('/pos/receipt/{sale}', [PosController::class, 'receipt'])->name('pos.receipt');
         Route::get('/pos/reprint/{sale}', [PosController::class, 'reprint'])->name('pos.reprint');
+    });
+
+    // Retail Sales History & Invoices
+    Route::middleware('module:sales_history')->group(function () {
+        Route::get('/pos/sales-history', [PosController::class, 'salesHistory'])->name('pos.sales.history');
     });
 
     // POS Returns & Exchanges

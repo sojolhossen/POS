@@ -111,7 +111,7 @@
                 <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Total gross sales</span>
                 <div class="flex items-baseline gap-2 mt-1">
                     <span class="text-xl font-bold font-sans tracking-tight text-slate-900 dark:text-white">
-                        ৳{{ number_format(($financials['net_revenue'] ?? 0) * 1.05, 0) }}
+                        ৳{{ number_format($financials['gross_sales'] ?? ($financials['net_revenue'] ?? 0), 2) }}
                     </span>
                     <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                         &nearr; 14.8%
@@ -148,7 +148,7 @@
                 <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Completed orders</span>
                 <div class="flex items-baseline gap-2 mt-1">
                     <span class="text-xl font-bold font-sans tracking-tight text-slate-900 dark:text-white">
-                        {{ array_sum($orderSeries->toArray() ?? []) ?: '393' }}
+                        {{ (isset($orderSeries) ? (is_iterable($orderSeries) ? (is_array($orderSeries) ? array_sum($orderSeries) : $orderSeries->sum()) : $orderSeries) : 0) }}
                     </span>
                     <span class="text-xs font-semibold text-rose-600 dark:text-rose-400">
                         &searr; 4.1%
@@ -231,7 +231,7 @@
                     <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
                         <span class="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                             <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
-                            Orders: {{ array_sum($orderSeries->toArray() ?? []) ?: '127' }}
+                            Orders: {{ (isset($orderSeries) ? (is_iterable($orderSeries) ? (is_array($orderSeries) ? array_sum($orderSeries) : $orderSeries->sum()) : $orderSeries) : 0) }}
                         </span>
                     </div>
                 </div>
@@ -278,27 +278,27 @@
         <div class="p-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xs space-y-3">
             <div>
                 <h3 class="text-xs font-semibold text-slate-800 dark:text-slate-200">Stock movement & Channel distribution</h3>
-                <!-- Legend items like Cloudflare (Dynamic 1.93k, None 120, Hit 116...) -->
+                <!-- Real stock movement counts -->
                 <div class="flex flex-wrap items-center gap-3 mt-1.5 text-[11px]">
                     <span class="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
-                        Sold 1.93k
+                        Sold {{ number_format($stockMovementTotals['sold'] ?? 0) }}
                     </span>
                     <span class="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#14b8a6]"></span>
-                        Transferred 120
+                        Transferred {{ number_format($stockMovementTotals['transferred'] ?? 0) }}
                     </span>
                     <span class="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#f43f5e]"></span>
-                        Received 116
+                        Received {{ number_format($stockMovementTotals['received'] ?? 0) }}
                     </span>
                     <span class="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#8b5cf6]"></span>
-                        In-Transit 62
+                        In-Transit {{ number_format($stockMovementTotals['in_transit'] ?? 0) }}
                     </span>
                     <span class="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
                         <span class="w-2.5 h-2.5 rounded-full bg-[#06b6d4]"></span>
-                        Reserved 10
+                        Reserved {{ number_format($stockMovementTotals['reserved'] ?? 0) }}
                     </span>
                 </div>
             </div>
@@ -538,18 +538,23 @@ function cloudflareDashboard() {
                 });
             }
 
-            // 3. Payment Distribution (Stacked Bars matching Cloudflare status code)
+            // 3. Payment Distribution (Real 7-day payments by tender)
             const ctxPay = document.getElementById('chartPaymentDistribution');
             if (ctxPay) {
+                const payDataCash = {!! json_encode($paymentSeries['Cash'] ?? []) !!};
+                const payDataBkash = {!! json_encode($paymentSeries['bKash'] ?? []) !!};
+                const payDataNagad = {!! json_encode($paymentSeries['Nagad'] ?? []) !!};
+                const payDataCard = {!! json_encode($paymentSeries['Card'] ?? []) !!};
+
                 new Chart(ctxPay, {
                     type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Cash', data: [40, 50, 45, 60, 70, 55, 80], backgroundColor: '#0284c7' },
-                            { label: 'bKash', data: [25, 30, 28, 40, 45, 35, 50], backgroundColor: '#ec4899' },
-                            { label: 'Nagad', data: [15, 20, 18, 22, 25, 20, 30], backgroundColor: '#9333ea' },
-                            { label: 'Card', data: [10, 15, 12, 18, 20, 15, 25], backgroundColor: '#4f46e5' }
+                            { label: 'Cash', data: payDataCash, backgroundColor: '#0284c7' },
+                            { label: 'bKash', data: payDataBkash, backgroundColor: '#ec4899' },
+                            { label: 'Nagad', data: payDataNagad, backgroundColor: '#9333ea' },
+                            { label: 'Card', data: payDataCard, backgroundColor: '#4f46e5' }
                         ]
                     },
                     options: {
@@ -557,29 +562,51 @@ function cloudflareDashboard() {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false },
-                            tooltip: { cornerRadius: 6 }
+                            tooltip: { 
+                                cornerRadius: 6,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ৳' + Number(context.raw || 0).toLocaleString();
+                                    }
+                                }
+                            }
                         },
                         scales: {
                             x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-                            y: { stacked: true, grid: { color: 'rgba(226, 232, 240, 0.4)' }, ticks: { font: { size: 10 } } }
+                            y: { 
+                                stacked: true, 
+                                grid: { color: 'rgba(226, 232, 240, 0.4)' }, 
+                                ticks: { 
+                                    font: { size: 10 },
+                                    callback: function(val) {
+                                        return '৳' + (val >= 1000 ? (val/1000) + 'k' : val);
+                                    }
+                                } 
+                            }
                         }
                     }
                 });
             }
 
-            // 4. Inventory Flow (Stacked Bars matching Cloudflare cache status)
+            // 4. Inventory Flow (Real 7-day stock movements)
             const ctxInv = document.getElementById('chartInventoryFlow');
             if (ctxInv) {
+                const stockSold = {!! json_encode($stockSeries['sold'] ?? []) !!};
+                const stockTransferred = {!! json_encode($stockSeries['transferred'] ?? []) !!};
+                const stockReceived = {!! json_encode($stockSeries['received'] ?? []) !!};
+                const stockInTransit = {!! json_encode($stockSeries['in_transit'] ?? []) !!};
+                const stockReserved = {!! json_encode($stockSeries['reserved'] ?? []) !!};
+
                 new Chart(ctxInv, {
                     type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [
-                            { label: 'Sold', data: [55, 65, 58, 75, 85, 70, 95], backgroundColor: '#f59e0b' },
-                            { label: 'Transferred', data: [10, 12, 15, 14, 18, 12, 16], backgroundColor: '#14b8a6' },
-                            { label: 'Received', data: [15, 18, 12, 20, 22, 18, 25], backgroundColor: '#f43f5e' },
-                            { label: 'In-Transit', data: [8, 10, 6, 12, 14, 9, 11], backgroundColor: '#8b5cf6' },
-                            { label: 'Reserved', data: [4, 5, 3, 6, 7, 5, 8], backgroundColor: '#06b6d4' }
+                            { label: 'Sold', data: stockSold, backgroundColor: '#f59e0b' },
+                            { label: 'Transferred', data: stockTransferred, backgroundColor: '#14b8a6' },
+                            { label: 'Received', data: stockReceived, backgroundColor: '#f43f5e' },
+                            { label: 'In-Transit / Adj', data: stockInTransit, backgroundColor: '#8b5cf6' },
+                            { label: 'Reserved / Return', data: stockReserved, backgroundColor: '#06b6d4' }
                         ]
                     },
                     options: {
@@ -587,11 +614,27 @@ function cloudflareDashboard() {
                         maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false },
-                            tooltip: { cornerRadius: 6 }
+                            tooltip: { 
+                                cornerRadius: 6,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + Number(context.raw || 0).toLocaleString() + ' pcs';
+                                    }
+                                }
+                            }
                         },
                         scales: {
                             x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-                            y: { stacked: true, grid: { color: 'rgba(226, 232, 240, 0.4)' }, ticks: { font: { size: 10 } } }
+                            y: { 
+                                stacked: true, 
+                                grid: { color: 'rgba(226, 232, 240, 0.4)' }, 
+                                ticks: { 
+                                    font: { size: 10 },
+                                    callback: function(val) {
+                                        return val + ' pcs';
+                                    }
+                                } 
+                            }
                         }
                     }
                 });

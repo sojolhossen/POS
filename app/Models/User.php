@@ -51,6 +51,14 @@ class User extends Authenticatable
         return $this->belongsTo(Store::class);
     }
 
+    public function getRoleNameAttribute(): string
+    {
+        if ($this->role instanceof UserRole) {
+            return ucwords(str_replace('_', ' ', $this->role->value));
+        }
+        return ucwords(str_replace('_', ' ', (string) ($this->role ?? 'User')));
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->role === UserRole::SUPER_ADMIN;
@@ -74,6 +82,20 @@ class User extends Authenticatable
     public function isAccountant(): bool
     {
         return $this->role === UserRole::ACCOUNTANT;
+    }
+
+    /**
+     * Check if user has permission to access a functional module.
+     * Super Admin bypasses all checks.
+     */
+    public function canAccessModule(string $module): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $roleVal = $this->role instanceof UserRole ? $this->role->value : (string) $this->role;
+        return RolePermission::isAllowed($roleVal, $module);
     }
 
     /**

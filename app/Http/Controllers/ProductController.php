@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\StockTransactionType;
 use App\Models\Category;
 use App\Models\PriceHistory;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Store;
 use App\Services\AuditService;
 use App\Services\BarcodeService;
+use App\Services\InventoryService;
 use App\Services\SkuGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,12 +57,13 @@ class ProductController extends Controller
     public function create(): View
     {
         $categories = Category::with('subcategories')->active()->rootOnly()->orderBy('name')->get();
+        $stores = Store::active()->orderBy('name')->get();
 
-        return view('products.create', compact('categories'));
+        return view('products.create', compact('categories', 'stores'));
     }
 
     /**
-     * Store a newly created product along with initial size/color variants and barcodes.
+     * Store a newly created product along with initial size/color variants, barcodes, and optional opening stock.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -72,18 +76,21 @@ class ProductController extends Controller
             'fabric' => ['nullable', 'string', 'max:100'],
             'base_purchase_price' => ['required', 'numeric', 'min:0'],
             'base_selling_price' => ['required', 'numeric', 'min:0'],
+            'store_id' => ['nullable', 'exists:stores,id'],
             'is_active' => ['boolean'],
-            // Variants array: sizes and colors
+            // Variants array: sizes, colors, override prices, and initial intake quantities
             'variants' => ['required', 'array', 'min:1'],
             'variants.*.size' => ['required', 'string', 'max:50'],
             'variants.*.color' => ['required', 'string', 'max:50'],
+            'variants.*.quantity' => ['nullable', 'integer', 'min:0'],
             'variants.*.purchase_price' => ['nullable', 'numeric', 'min:0'],
             'variants.*.selling_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $category = Category::findOrFail($validated['category_id']);
+        $targetStoreId = $validated['store_id'] ?? ($request->user()->store_id ?? Store::first()?->id);
 
-        DB::transaction(function () use ($validated, $category, $request) {
+        DB::transaction(function () use ($validated, $category, $targetStoreId, $request) {
             // Auto-generate unique concurrency-safe SKU using category code (e.g. SH-000123)
             $sku = SkuGeneratorService::generate($category);
 
@@ -111,8 +118,10 @@ class ProductController extends Controller
                 'created_at' => now(),
             ]);
 
-            // Create Variants with Unique Code 128 barcodes
+            // Create Variants with Unique Code 128 barcodes and optional opening stock
             $seenVariants = [];
+            $totalInitialStock = 0;
+
             foreach ($validated['variants'] as $v) {
                 $size = trim($v['size']);
                 $color = trim($v['color']);
@@ -125,6 +134,8 @@ class ProductController extends Controller
 
                 // Unique Code 128 barcode
                 $barcode = BarcodeService::generateUniqueBarcode();
+                $purchaseCost = !empty($v['purchase_price']) ? (float) $v['purchase_price'] : (float) $product->base_purchase_price;
+                $initialQty = isset($v['quantity']) ? max(0, (int) $v['quantity']) : 0;
 
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
@@ -133,6 +144,7 @@ class ProductController extends Controller
                     'barcode' => $barcode,
                     'purchase_price' => !empty($v['purchase_price']) ? $v['purchase_price'] : null,
                     'selling_price' => !empty($v['selling_price']) ? $v['selling_price'] : null,
+                    'weighted_average_cost' => $purchaseCost,
                     'is_active' => true,
                 ]);
 
@@ -147,17 +159,39 @@ class ProductController extends Controller
                         'created_at' => now(),
                     ]);
                 }
+
+                // If user entered initial quantity for this variant, record opening balance in stock ledger
+                if ($initialQty > 0 && $targetStoreId) {
+                    InventoryService::recordStockMovement(
+                        type: StockTransactionType::OPENING_BALANCE,
+                        variantId: $variant->id,
+                        storeId: (int) $targetStoreId,
+                        quantity: $initialQty,
+                        relatedStoreId: null,
+                        unitCost: $purchaseCost,
+                        referenceNumber: 'INIT-' . $product->sku,
+                        notes: "Initial variant intake ({$initialQty} pcs) upon catalog product creation",
+                        actor: Auth::user()
+                    );
+                    $totalInitialStock += $initialQty;
+                }
             }
 
             AuditService::log(
                 action: 'product.created',
                 auditable: $product,
-                newValues: ['sku' => $sku, 'name' => $product->name, 'variants_count' => count($seenVariants)],
-                reason: 'Created product with auto-generated SKU and variants'
+                newValues: [
+                    'sku' => $sku,
+                    'name' => $product->name,
+                    'variants_count' => count($seenVariants),
+                    'initial_stock_total' => $totalInitialStock,
+                    'store_id' => $targetStoreId,
+                ],
+                reason: 'Created product with auto-generated SKU, variants, and initial stock quantities'
             );
         });
 
-        return redirect()->route('products.index')->with('success', 'Product created with unique SKU and variants.');
+        return redirect()->route('products.index')->with('success', 'Product created with unique SKU, variants, and stock balances.');
     }
 
     /**

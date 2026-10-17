@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\StockTransactionType;
 use App\Models\DailyCashRegister;
 use App\Models\Expense;
 use App\Models\FinancialAccount;
 use App\Models\PosReturn;
 use App\Models\PosSale;
+use App\Models\PosSalePayment;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseReceiving;
 use App\Models\StockBalance;
+use App\Models\StockLedger;
 use App\Models\StockTransfer;
+use App\Models\StockTransferItem;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Services\FinancialReportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -56,31 +61,102 @@ class DashboardController extends Controller
         $totalLiquidCash = (float) $financialAccounts->sum('current_balance');
         $openCashRegisters = DailyCashRegister::where('status', 'open')->with(['store', 'user'])->get();
 
-        // 7-day analytics time series for Cloudflare-style interactive charts
+        // 7-day trend series for Analytics charts
         $dates = collect();
+        $revenueSeries = collect();
+        $orderSeries = collect();
+        $paymentSeries = [
+            'Cash' => collect(),
+            'bKash' => collect(),
+            'Nagad' => collect(),
+            'Card' => collect(),
+        ];
+        $stockSeries = [
+            'sold' => collect(),
+            'transferred' => collect(),
+            'received' => collect(),
+            'in_transit' => collect(),
+            'reserved' => collect(),
+        ];
+
+        // Pre-fetch payments grouped by date & method for the last 7 days
+        $startDate = now()->subDays(6)->startOfDay();
+        $paymentsByDay = DB::table('pos_sale_payments')
+            ->where('created_at', '>=', $startDate)
+            ->selectRaw('DATE(created_at) as dt, LOWER(payment_method) as method, SUM(amount) as amt')
+            ->groupBy('dt', 'method')
+            ->get()
+            ->groupBy('dt');
+
+        // Pre-fetch stock ledgers grouped by date & type for the last 7 days
+        $stockByDay = DB::table('stock_ledgers')
+            ->where('created_at', '>=', $startDate)
+            ->selectRaw('DATE(created_at) as dt, transaction_type, SUM(ABS(quantity)) as qty')
+            ->groupBy('dt', 'transaction_type')
+            ->get()
+            ->groupBy('dt');
+
         for ($i = 6; $i >= 0; $i--) {
-            $dates->push(now()->subDays($i)->format('M d'));
+            $date = now()->subDays($i);
+            $dateString = $date->format('Y-m-d');
+            $dates->push($date->format('M d'));
+
+            // 1 & 2: Daily Sales and Orders
+            $daySales = PosSale::whereDate('created_at', $dateString)
+                ->whereIn('status', ['completed', 'partially_refunded', 'refunded']);
+
+            $orderSeries->push((int) $daySales->count());
+            $revenueSeries->push((float) $daySales->sum('total_payable'));
+
+            // 3: Daily Payments by Tender
+            $dayPayGroup = $paymentsByDay->get($dateString, collect())->mapWithKeys(function ($item) {
+                return [(string) ($item->method ?? '') => (float) ($item->amt ?? 0)];
+            });
+            $paymentSeries['Cash']->push((float) ($dayPayGroup['cash'] ?? 0));
+            $paymentSeries['bKash']->push((float) ($dayPayGroup['bkash'] ?? 0));
+            $paymentSeries['Nagad']->push((float) ($dayPayGroup['nagad'] ?? 0));
+            $paymentSeries['Card']->push((float) ($dayPayGroup['card'] ?? 0));
+
+            // 4: Daily Stock Movements by Category
+            $dayStockGroup = $stockByDay->get($dateString, collect())->mapWithKeys(function ($item) {
+                $type = is_object($item->transaction_type) && isset($item->transaction_type->value)
+                    ? $item->transaction_type->value
+                    : (string) $item->transaction_type;
+                return [$type => (int) ($item->qty ?? 0)];
+            });
+
+            $soldQty = (int) ($dayStockGroup[StockTransactionType::SALE->value] ?? 0);
+            $transferQty = (int) (($dayStockGroup[StockTransactionType::TRANSFER_DISPATCH->value] ?? 0) + ($dayStockGroup[StockTransactionType::TRANSFER_RECEIVE->value] ?? 0));
+            $receiveQty = (int) ($dayStockGroup[StockTransactionType::WAREHOUSE_RECEIVE->value] ?? 0);
+            $adjustQty = (int) (($dayStockGroup[StockTransactionType::ADJUSTMENT_INCREASE->value] ?? 0) + ($dayStockGroup[StockTransactionType::ADJUSTMENT_DECREASE->value] ?? 0));
+            $returnQty = (int) ($dayStockGroup[StockTransactionType::RETURN->value] ?? 0);
+
+            $stockSeries['sold']->push($soldQty);
+            $stockSeries['transferred']->push($transferQty);
+            $stockSeries['received']->push($receiveQty);
+            $stockSeries['in_transit']->push($adjustQty);
+            $stockSeries['reserved']->push($returnQty);
         }
 
-        $salesQuery = PosSale::where('created_at', '>=', now()->subDays(7))->get();
-        
-        $revenueSeries = $dates->map(function ($dateLabel, $idx) use ($salesQuery) {
-            $dateStr = now()->subDays(6 - $idx)->format('Y-m-d');
-            $sum = (float) $salesQuery->filter(fn($s) => $s->created_at->format('Y-m-d') === $dateStr)->sum('total_payable');
-            return $sum > 0 ? $sum : round(mt_rand(12000, 35000), 2);
-        });
-
-        $orderSeries = $dates->map(function ($dateLabel, $idx) use ($salesQuery) {
-            $dateStr = now()->subDays(6 - $idx)->format('Y-m-d');
-            $cnt = $salesQuery->filter(fn($s) => $s->created_at->format('Y-m-d') === $dateStr)->count();
-            return $cnt > 0 ? $cnt : mt_rand(15, 65);
-        });
+        // Summary totals for Payment tenders (overall)
+        $paymentsTotal = PosSalePayment::selectRaw('LOWER(payment_method) as method, SUM(amount) as total')
+            ->groupBy('method')
+            ->pluck('total', 'method');
 
         $paymentMethods = [
-            'Cash' => (float) \App\Models\PosSalePayment::where('payment_method', 'cash')->sum('amount') ?: 45200.00,
-            'bKash' => (float) \App\Models\PosSalePayment::where('payment_method', 'bkash')->sum('amount') ?: 28400.00,
-            'Nagad' => (float) \App\Models\PosSalePayment::where('payment_method', 'nagad')->sum('amount') ?: 16900.00,
-            'Card' => (float) \App\Models\PosSalePayment::where('payment_method', 'card')->sum('amount') ?: 12300.00,
+            'Cash' => (float) ($paymentsTotal['cash'] ?? 0),
+            'bKash' => (float) ($paymentsTotal['bkash'] ?? 0),
+            'Nagad' => (float) ($paymentsTotal['nagad'] ?? 0),
+            'Card' => (float) ($paymentsTotal['card'] ?? 0),
+        ];
+
+        // Summary totals for Stock Movements (overall)
+        $stockMovementTotals = [
+            'sold' => (int) StockLedger::where('transaction_type', StockTransactionType::SALE->value)->sum(DB::raw('abs(quantity)')),
+            'transferred' => (int) StockLedger::whereIn('transaction_type', [StockTransactionType::TRANSFER_DISPATCH->value, StockTransactionType::TRANSFER_RECEIVE->value])->sum(DB::raw('abs(quantity)')),
+            'received' => (int) StockLedger::where('transaction_type', StockTransactionType::WAREHOUSE_RECEIVE->value)->sum(DB::raw('abs(quantity)')),
+            'in_transit' => (int) StockTransferItem::whereHas('transfer', fn($q) => $q->whereIn('status', ['requested', 'in_transit']))->sum(DB::raw('COALESCE(NULLIF(quantity_dispatched, 0), quantity_requested)')),
+            'reserved' => (int) StockBalance::sum('quantity_reserved'),
         ];
 
         return view('dashboards.super_admin', compact(
@@ -96,7 +172,10 @@ class DashboardController extends Controller
             'dates',
             'revenueSeries',
             'orderSeries',
-            'paymentMethods'
+            'paymentMethods',
+            'paymentSeries',
+            'stockSeries',
+            'stockMovementTotals'
         ));
     }
 
@@ -225,6 +304,10 @@ class DashboardController extends Controller
         if ($user = $request->user()) {
             $user->theme = $theme;
             $user->save();
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['status' => 'success', 'theme' => $theme]);
         }
 
         return back();

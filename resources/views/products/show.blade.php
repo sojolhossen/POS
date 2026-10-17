@@ -73,10 +73,17 @@
 
     <!-- VARIANTS & CODE 128 BARCODES TABLE -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Product Variants & Code 128 Barcodes</h3>
                 <p class="text-xs text-slate-500">Barcodes are permanently bound to each size/color variant.</p>
+            </div>
+            <div>
+                <a href="{{ route('barcodes.print', ['product_id' => $product->id]) }}" target="_blank"
+                   class="inline-flex items-center gap-2 py-2 px-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition border border-indigo-200/50 dark:border-indigo-800/50 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>Print All Barcodes for this Product</span>
+                </a>
             </div>
         </div>
 
@@ -89,6 +96,7 @@
                         <th class="py-3 px-3">Barcode Render</th>
                         <th class="py-3 px-3 text-right">Selling Price</th>
                         <th class="py-3 px-3 text-right">Stock On Hand</th>
+                        <th class="py-3 px-3 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -113,10 +121,17 @@
                             <td class="py-3.5 px-3 text-right font-bold text-slate-800 dark:text-slate-200 font-mono">
                                 {{ $variant->stockBalances->sum('quantity_on_hand') }} Units
                             </td>
+                            <td class="py-3.5 px-3 text-right">
+                                <a href="{{ route('barcodes.print', ['single_variant_id' => $variant->id, 'single_quantity' => max(1, (int)$variant->stockBalances->sum('quantity_on_hand'))]) }}" target="_blank"
+                                   class="inline-flex items-center gap-1 py-1 px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-600 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                    <span>Print</span>
+                                </a>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-6 text-center text-slate-400">No variants created for this product.</td>
+                            <td colspan="6" class="py-6 text-center text-slate-400">No variants created for this product.</td>
                         </tr>
                     @endforelse
                 </tbody>

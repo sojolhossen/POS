@@ -21,7 +21,7 @@
     <div class="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
         <form method="GET" action="{{ route('returns.create') }}" class="flex flex-col sm:flex-row items-center gap-3">
             <div class="relative flex-1 w-full">
-                <input type="text" name="invoice_number" value="{{ $invoiceNumber }}" required
+                <input type="text" name="invoice_number" value="{{ $invoiceNumber ?? ($sale->invoice_number ?? '') }}" required
                        placeholder="Enter original invoice number (e.g. INV-DHK-20261016-000001)..."
                        class="w-full text-xs rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-4 py-2.5 font-mono">
             </div>
@@ -44,7 +44,7 @@
 
     @if($sale)
         @php
-            $daysSinceSale = $sale->created_at->diffInDays(now());
+            $daysSinceSale = (int) $sale->created_at->diffInDays(now());
             $isWithin7Days = $daysSinceSale <= 7;
         @endphp
 
@@ -56,7 +56,7 @@
                         {{ $sale->invoice_number }}
                     </span>
                     <span class="text-xs text-slate-500 ml-2">
-                        Sold on {{ $sale->created_at->format('d M Y, h:i A') }} ({{ $daysSinceSale }} days ago)
+                        Sold on {{ $sale->created_at->format('d M Y, h:i A') }} ({{ $daysSinceSale === 0 ? 'Today' : $daysSinceSale . ' days ago' }})
                     </span>
                 </div>
                 <div>
@@ -84,6 +84,9 @@
                 <div>
                     <span class="text-slate-400 text-[10px] uppercase font-bold">Original Invoice Total:</span>
                     <div class="font-mono font-bold text-slate-900 dark:text-white">৳{{ number_format($sale->total_amount, 2) }}</div>
+                    @if($sale->discount_amount > 0)
+                        <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">(৳{{ number_format($sale->discount_amount, 2) }} discount applied)</div>
+                    @endif
                 </div>
                 <div>
                     <span class="text-slate-400 text-[10px] uppercase font-bold">Settlement Rails:</span>
@@ -114,7 +117,8 @@
                             <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-100 dark:border-slate-800">
                                 <th class="p-3">Garment Item</th>
                                 <th class="p-3 text-right">Sold Qty</th>
-                                <th class="p-3 text-right">Unit Price</th>
+                                <th class="p-3 text-right">Catalog Price</th>
+                                <th class="p-3 text-right">Net Refund Rate</th>
                                 <th class="p-3 text-right w-28">Return Qty</th>
                                 <th class="p-3 w-40">Condition</th>
                                 <th class="p-3 min-w-[200px]">Item Return Reason</th>
@@ -123,8 +127,12 @@
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             @foreach($sale->items as $idx => $item)
                                 @php
-                                    $returnedSoFar = \App\Models\PosReturnItem::where('pos_sale_item_id', $item->id)->sum('quantity');
-                                    $returnable = max(0, $item->quantity - $returnedSoFar);
+                                    $returnedSoFar = (int) ($item->quantity_returned ?? \App\Models\PosReturnItem::where('original_pos_sale_item_id', $item->id)->sum('quantity'));
+                                    $returnable = $item->returnableQuantity();
+                                    $unitCatalogPrice = (float) $item->unit_price;
+                                    $itemQty = max(1, (int) $item->quantity);
+                                    $netUnitPaid = round(((float) $item->line_total) / $itemQty, 2);
+                                    $unitDiscount = round(((float) $item->discount_amount) / $itemQty, 2);
                                 @endphp
                                 <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                                     <td class="p-3">
@@ -142,15 +150,24 @@
                                             <div class="text-[10px] text-amber-500">({{ $returnedSoFar }} prev. ret.)</div>
                                         @endif
                                     </td>
-                                    <td class="p-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                                        ৳{{ number_format($item->unit_price, 2) }}
+                                    <td class="p-3 text-right font-mono text-slate-400">
+                                        ৳{{ number_format($unitCatalogPrice, 2) }}
+                                    </td>
+                                    <td class="p-3 text-right font-mono">
+                                        <div class="font-bold text-emerald-600 dark:text-emerald-400">
+                                            ৳{{ number_format($netUnitPaid, 2) }}
+                                        </div>
+                                        @if($unitDiscount > 0)
+                                            <div class="text-[10px] text-rose-500 font-sans">(-৳{{ number_format($unitDiscount, 2) }} disc.)</div>
+                                        @endif
                                     </td>
                                     <td class="p-3 text-right">
                                         @if($returnable > 0)
                                             <input type="number" min="0" max="{{ $returnable }}"
                                                    name="items[{{ $idx }}][quantity]"
                                                    value="{{ old('items.'.$idx.'.quantity', 0) }}"
-                                                   class="w-full text-right text-xs rounded-lg border-rose-300 dark:border-rose-700 bg-rose-50/20 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 font-bold px-2 py-1.5 font-mono">
+                                                   data-unit-refund="{{ $netUnitPaid }}"
+                                                   class="return-qty-input w-full text-right text-xs rounded-lg border-rose-300 dark:border-rose-700 bg-rose-50/20 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 font-bold px-2 py-1.5 font-mono">
                                             <div class="text-[10px] text-slate-400 mt-0.5">Max: {{ $returnable }}</div>
                                         @else
                                             <span class="text-[10px] text-slate-400 font-bold">Fully Returned</span>
@@ -173,6 +190,24 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Live Refund Calculation Summary -->
+                <div class="p-4 bg-slate-50/70 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                            Cash Register Refund Total:
+                        </div>
+                        <div class="text-[11px] text-slate-400">
+                            Calculated strictly on actual net price paid (after discount deduction).
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-slate-500 font-medium">Estimated Refund:</span>
+                        <span id="liveRefundTotal" class="font-mono text-base font-black text-rose-600 dark:text-rose-400">
+                            ৳0.00
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -237,6 +272,34 @@
                 </button>
             </div>
         </form>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const qtyInputs = document.querySelectorAll('.return-qty-input');
+                const liveTotalEl = document.getElementById('liveRefundTotal');
+
+                function updateRefundCalculation() {
+                    let total = 0.0;
+                    qtyInputs.forEach(function (input) {
+                        const qty = parseInt(input.value, 10) || 0;
+                        const unitRate = parseFloat(input.getAttribute('data-unit-refund')) || 0.0;
+                        if (qty > 0) {
+                            total += (qty * unitRate);
+                        }
+                    });
+                    if (liveTotalEl) {
+                        liveTotalEl.textContent = '৳' + total.toFixed(2);
+                    }
+                }
+
+                qtyInputs.forEach(function (input) {
+                    input.addEventListener('input', updateRefundCalculation);
+                    input.addEventListener('change', updateRefundCalculation);
+                });
+
+                updateRefundCalculation();
+            });
+        </script>
     @elseif(!empty($invoiceNumber))
         <div class="p-8 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 text-xs">
             No sale found matching invoice number <strong class="text-slate-800 dark:text-slate-200 font-mono">{{ $invoiceNumber }}</strong>. Please check the spelling or scan the barcode from customer's cash memo.

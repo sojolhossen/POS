@@ -76,14 +76,30 @@ class PosReturnService
                     throw new Exception("Cannot return {$qty} units of {$saleItem->product_name}. Maximum returnable remaining: {$saleItem->returnableQuantity()}.");
                 }
 
-                $unitPrice = (float) $saleItem->unit_price;
-                $lineTotal = round($unitPrice * $qty, 2);
+                // Calculate net price paid per unit by customer (honoring line discounts and promotions)
+                $itemQuantity = max(1, (int) $saleItem->quantity);
+                $itemLineTotal = (float) $saleItem->line_total; // net amount charged for this line after discounts
+                $effectiveUnitPaid = round($itemLineTotal / $itemQuantity, 2);
+
+                $returnable = $saleItem->returnableQuantity();
+                $prevItemRefundTotal = (float) PosReturnItem::where('original_pos_sale_item_id', $saleItem->id)->sum('line_total');
+                $totalItemPaid = round($effectiveUnitPaid * $itemQuantity, 2);
+
+                if ($qty === $returnable) {
+                    // Full remaining return: ensure exact sum matches net paid without penny rounding drift
+                    $lineTotal = max(0.0, round($totalItemPaid - $prevItemRefundTotal, 2));
+                    $unitRefund = $qty > 0 ? round($lineTotal / $qty, 2) : 0.0;
+                } else {
+                    $unitRefund = $effectiveUnitPaid;
+                    $lineTotal = round($unitRefund * $qty, 2);
+                }
+
                 $totalReturnedValue += $lineTotal;
 
                 $returnLines[] = [
                     'sale_item' => $saleItem,
                     'quantity' => $qty,
-                    'unit_price' => $unitPrice,
+                    'unit_price' => $unitRefund,
                     'line_total' => $lineTotal,
                     'condition' => $condition,
                     'reason' => $itemReason,
@@ -92,6 +108,13 @@ class PosReturnService
 
             if ($totalReturnedValue <= 0) {
                 throw new Exception("No valid items selected for return.");
+            }
+
+            // Cap total refund to remaining payable amount on original invoice to strictly prevent over-refunding
+            $prevSaleRefundTotal = (float) PosReturn::where('original_pos_sale_id', $sale->id)->sum('total_returned_value');
+            $maxRefundPossible = max(0.0, round((float) $sale->total_payable - $prevSaleRefundTotal, 2));
+            if ($totalReturnedValue > $maxRefundPossible) {
+                $totalReturnedValue = $maxRefundPossible;
             }
 
             $replacementValue = $replacementSale ? (float) $replacementSale->total_payable : 0.0;

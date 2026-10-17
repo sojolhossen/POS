@@ -41,6 +41,11 @@ class PurchaseOrder extends Model
         return $this->belongsTo(Store::class, 'destination_store_id');
     }
 
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'destination_store_id');
+    }
+
     public function items()
     {
         return $this->hasMany(PurchaseOrderItem::class);
@@ -69,6 +74,16 @@ class PurchaseOrder extends Model
     public function canBeApproved(): bool
     {
         return in_array($this->status, ['draft', 'submitted']);
+    }
+
+    public function getPoDateAttribute()
+    {
+        return $this->created_at;
+    }
+
+    public function getTotalOrderedQtyAttribute(): int
+    {
+        return (int) $this->items()->sum('ordered_quantity');
     }
 
     public function getTotalReceivedQtyAttribute(): int

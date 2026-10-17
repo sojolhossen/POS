@@ -138,9 +138,9 @@ class PosCheckoutService
 
             $postDiscountTaxableAmount = max(0, $totalSubtotal - $totalDiscount - $loyaltyDiscount);
 
-            // Step 3: Tax Calculation (Configurable rate on post-discount amount, standard 5% VAT in Bangladesh fashion retail)
-            $taxRate = (float) config('pos.tax_rate', 5.00);
-            $taxAmount = round($postDiscountTaxableAmount * ($taxRate / 100), 2);
+            // Step 3: Tax Calculation (Configurable via AppSetting, default 5% VAT or 0% when disabled)
+            $taxRate = \App\Models\AppSetting::getVatRate();
+            $taxAmount = $taxRate > 0 ? round($postDiscountTaxableAmount * ($taxRate / 100), 2) : 0.00;
 
             // Step 4: Final Total Payable rounded to nearest whole BDT (Standard rounding rule)
             $rawPayable = $postDiscountTaxableAmount + $taxAmount;

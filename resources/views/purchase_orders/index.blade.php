@@ -93,7 +93,7 @@
                                 {{ $po->store->name ?? 'Central Warehouse' }}
                             </td>
                             <td class="p-3 text-slate-500">
-                                {{ $po->po_date->format('d M Y') }}
+                                {{ optional($po->po_date ?? $po->created_at)->format('d M Y') ?? '—' }}
                             </td>
                             <td class="p-3 text-center">
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold
@@ -119,7 +119,7 @@
                                     View
                                 </a>
                                 @if(in_array($po->status, ['approved', 'partially_received']))
-                                    <a href="{{ route('purchase_receivings.create', $po) }}" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-sm">
+                                    <a href="{{ route('purchase-receivings.create', $po) }}" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-sm">
                                         Receive Stock
                                     </a>
                                 @endif

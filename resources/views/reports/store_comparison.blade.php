@@ -52,7 +52,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                    @forelse($comparisons as $st)
+                    @forelse(($comparisons ?? $comparison ?? []) as $st)
                         <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
                             <td class="px-6 py-4">
                                 <div class="font-semibold text-slate-900 dark:text-white">{{ $st['store_name'] }}</div>

@@ -76,13 +76,20 @@
                                 {{ $tr->sourceStore->name }}
                             </td>
                             <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">
-                                {{ $tr->destinationStore->name }}
+                                <div>{{ $tr->destinationStore->name }}</div>
+                                @if($tr->receiver)
+                                    <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                                        <span>Received by: <strong>{{ $tr->receiver->name }}</strong></span>
+                                    </div>
+                                @endif
                             </td>
                             <td class="p-3 text-slate-500">
-                                {{ $tr->created_at->format('d M Y, h:i A') }}
+                                <div>{{ $tr->created_at->format('d M Y, h:i A') }}</div>
+                                <div class="text-[10px] text-slate-400">By: {{ $tr->creator->name ?? 'User' }}</div>
                             </td>
                             <td class="p-3 text-center">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold inline-block
                                     @if($tr->status === 'completed') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300
                                     @elseif($tr->status === 'in_transit') bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300
                                     @elseif($tr->status === 'approved') bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300
@@ -90,6 +97,13 @@
                                     @else bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 @endif">
                                     {{ strtoupper(str_replace('_', ' ', $tr->status)) }}
                                 </span>
+                                @if($tr->status === 'requested')
+                                    <div class="text-[9px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">Awaiting Super Admin</div>
+                                @elseif($tr->status === 'approved')
+                                    <div class="text-[9px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">Approved by Super Admin</div>
+                                @elseif($tr->status === 'in_transit')
+                                    <div class="text-[9px] text-purple-600 dark:text-purple-400 font-medium mt-0.5">Ready for Intake</div>
+                                @endif
                             </td>
                             <td class="p-3 text-right font-mono text-slate-700 dark:text-slate-200">
                                 {{ $tr->items->sum('quantity_requested') }} pcs
@@ -98,14 +112,27 @@
                                 <a href="{{ route('transfers.show', $tr) }}" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold">
                                     View
                                 </a>
+                                <a href="{{ route('transfers.print', $tr) }}" target="_blank" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold" title="Print Official Challan">
+                                    🖨️
+                                </a>
+                                @if($tr->status === 'requested' && auth()->user()?->isSuperAdmin())
+                                    <form method="POST" action="{{ route('transfers.approve', $tr) }}" class="inline-block" onsubmit="return confirm('Approve transfer as Super Admin?');">
+                                        @csrf
+                                        <button type="submit" class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold">
+                                            Approve
+                                        </button>
+                                    </form>
+                                @endif
                                 @if($tr->status === 'approved')
                                     <a href="{{ route('transfers.dispatch.view', $tr) }}" class="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold">
                                         Dispatch
                                     </a>
                                 @elseif($tr->status === 'in_transit')
-                                    <a href="{{ route('transfers.receive.view', $tr) }}" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold">
-                                        Confirm Receipt
-                                    </a>
+                                    @if(auth()->user()->isSuperAdmin() || !auth()->user()->store_id || auth()->user()->store_id == $tr->destination_store_id)
+                                        <a href="{{ route('transfers.receive.view', $tr) }}" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold">
+                                            Confirm Receipt
+                                        </a>
+                                    @endif
                                 @endif
                             </td>
                         </tr>

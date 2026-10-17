@@ -274,6 +274,29 @@ class PosCheckoutAndIntegrityTest extends TestCase
     }
 
     /**
+     * Test checkout rejects when customer tendered cash is less than payment amount (shortage / due).
+     */
+    public function test_cash_tendered_less_than_amount_is_rejected(): void
+    {
+        $checkoutService = app(PosCheckoutService::class);
+
+        $items = [['product_variant_id' => $this->variantA->id, 'quantity' => 1]];
+        // Net payable is 893.00, customer gave only 800.00 cash
+        $payments = [
+            ['payment_method' => 'cash', 'amount' => 893.00, 'tendered_amount' => 800.00]
+        ];
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Tendered cash (৳800) is less than allocated cash payment (৳893)');
+        $checkoutService->checkout(
+            $this->store,
+            $this->cashier,
+            $items,
+            $payments
+        );
+    }
+
+    /**
      * Test reprinting receipt retains original invoice number and does not create new sale.
      */
     public function test_reprint_retains_original_invoice_number(): void

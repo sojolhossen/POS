@@ -73,11 +73,16 @@ class TransferService
      */
     public function approveTransfer(StockTransfer $transfer, User $user): StockTransfer
     {
+        if (!$user->isSuperAdmin()) {
+            throw new Exception("Unauthorized! Only Super Admin can approve stock transfers.");
+        }
+
         if (!in_array($transfer->status, ['draft', 'requested'])) {
             throw new Exception("Transfer {$transfer->reference_number} cannot be approved in status {$transfer->status}.");
         }
 
         return DB::transaction(function () use ($transfer, $user) {
+            $oldStatus = $transfer->status;
             $transfer->update([
                 'status' => 'approved',
                 'approved_by' => $user->id,
@@ -87,9 +92,9 @@ class TransferService
             AuditService::log(
                 action: 'transfer.approved',
                 auditable: $transfer,
-                oldValues: ['status' => 'requested'],
-                newValues: ['status' => 'approved'],
-                reason: "Transfer approved {$transfer->reference_number}"
+                oldValues: ['status' => $oldStatus],
+                newValues: ['status' => 'approved', 'approved_by' => $user->name],
+                reason: "Stock transfer approved by Super Admin ({$user->name})"
             );
 
             return $transfer;
@@ -272,12 +277,21 @@ class TransferService
                 'received_at' => now(),
             ]);
 
+            $roleTitle = $user->role_name ?? 'Staff';
+            $destName = $transfer->destinationStore?->name ?? 'Destination Store';
+
             AuditService::log(
                 action: 'transfer.received',
                 auditable: $transfer,
                 oldValues: ['status' => 'in_transit'],
-                newValues: ['status' => $finalStatus],
-                reason: "Confirmed receipt of transfer {$transfer->reference_number} (Status: {$finalStatus})"
+                newValues: [
+                    'status' => $finalStatus,
+                    'received_by_id' => $user->id,
+                    'received_by_name' => $user->name,
+                    'receiver_role' => $user->role instanceof \App\Enums\UserRole ? $user->role->value : (string) $user->role,
+                    'store' => $destName,
+                ],
+                reason: "Confirmed receipt of transfer {$transfer->reference_number} by {$user->name} ({$roleTitle}) at {$destName}"
             );
 
             return $transfer;

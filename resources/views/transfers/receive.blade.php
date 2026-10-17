@@ -21,6 +21,10 @@
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Source: <strong>{{ $transfer->sourceStore->name }}</strong>. Inspect incoming garments. Any shortage, excess, or damage must include an explanation.
             </p>
+            <div class="inline-flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs">
+                <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                <span>Receiving Officer: <strong>{{ auth()->user()->name }}</strong> ({{ auth()->user()->role_name }}) &mdash; Your identity will be recorded in the official transfer history.</span>
+            </div>
         </div>
         <a href="{{ route('transfers.show', $transfer) }}" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
             ← Cancel

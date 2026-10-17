@@ -32,10 +32,14 @@ class BarcodeService
     /**
      * Render Code 128 SVG representation for a given barcode string.
      */
-    public static function renderSvg(string $barcode, int $widthFactor = 2, int $totalHeight = 45): string
+    public static function renderSvg(string $barcode, int $widthFactor = 2, int $totalHeight = 40): string
     {
         $generator = new BarcodeGeneratorSVG();
-        return $generator->getBarcode($barcode, $generator::TYPE_CODE_128, $widthFactor, $totalHeight);
+        $svg = $generator->getBarcode($barcode, $generator::TYPE_CODE_128, $widthFactor, $totalHeight);
+        // Strip standalone XML declaration and DOCTYPE for clean inline HTML5 SVG embedding
+        $svg = preg_replace('/<\?xml.*?\?>/s', '', $svg);
+        $svg = preg_replace('/<!DOCTYPE.*?>/s', '', $svg);
+        return trim($svg);
     }
 
     /**

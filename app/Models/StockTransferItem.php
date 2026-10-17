@@ -35,8 +35,18 @@ class StockTransferItem extends Model
         return $this->belongsTo(StockTransfer::class, 'stock_transfer_id');
     }
 
+    public function productVariant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    public function getQuantityDamagedAttribute(): int
+    {
+        return (int) ($this->quantity_discrepancy ?? 0);
     }
 }

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\EnforceUserRole::class,
+            'module' => \App\Http\Middleware\EnforceModulePermission::class,
             'store.scope' => \App\Http\Middleware\EnforceStoreScope::class,
         ]);
     })

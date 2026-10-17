@@ -52,6 +52,11 @@ class DailyCashRegister extends Model
         return $this->belongsTo(User::class, 'opened_by');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'opened_by');
+    }
+
     public function closer()
     {
         return $this->belongsTo(User::class, 'closed_by');

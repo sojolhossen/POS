@@ -108,9 +108,10 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->input('end_date', now()->format('Y-m-d'));
 
-        $comparison = $this->reportService->getStoreComparison($startDate, $endDate);
+        $comparisons = $this->reportService->getStoreComparison($startDate, $endDate);
+        $comparison = $comparisons;
 
-        return view('reports.store_comparison', compact('comparison', 'startDate', 'endDate'));
+        return view('reports.store_comparison', compact('comparisons', 'comparison', 'startDate', 'endDate'));
     }
 
     /**
@@ -162,6 +163,25 @@ class ReportController extends Controller
                 ], $items);
 
                 return $this->exportService->streamCsv("slow_moving_stock_{$days}_days.csv", $headers, $rows);
+
+            case 'comparison':
+                $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+                $endDate = $request->input('end_date', now()->format('Y-m-d'));
+                $data = $this->reportService->getStoreComparison($startDate, $endDate);
+
+                $headers = ['Store', 'Code', 'Total Orders', 'Net Revenue (BDT)', 'COGS (WAC)', 'Gross Profit (BDT)', 'Operating Expenses (BDT)', 'Operating Profit (BDT)'];
+                $rows = array_map(fn ($s) => [
+                    $s['store_name'],
+                    $s['store_code'],
+                    $s['total_orders'] ?? $s['sales_count'] ?? 0,
+                    $s['net_revenue'],
+                    $s['cogs'],
+                    $s['gross_profit'],
+                    $s['expenses'] ?? $s['operating_expenses'] ?? 0,
+                    $s['operating_profit'],
+                ], $data);
+
+                return $this->exportService->streamCsv("store_comparison_{$startDate}_{$endDate}.csv", $headers, $rows);
 
             default:
                 abort(404, "Unknown report type for export.");

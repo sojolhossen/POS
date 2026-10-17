@@ -67,18 +67,18 @@
                     @forelse($items as $item)
                         <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
                             <td class="px-6 py-4">
-                                <div class="font-semibold text-slate-900 dark:text-white">{{ $item['name'] }}</div>
-                                <div class="text-xs text-slate-400 font-mono">{{ $item['sku'] }}</div>
+                                <div class="font-semibold text-slate-900 dark:text-white">{{ $item['name'] ?? $item['product_name'] ?? 'Unknown Product' }}</div>
+                                <div class="text-xs text-slate-400 font-mono">{{ $item['sku'] ?? 'N/A' }}</div>
                             </td>
-                            <td class="px-6 py-4 text-xs">{{ $item['category'] }}</td>
-                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-900 dark:text-white">{{ $item['current_stock'] }}</td>
-                            <td class="px-6 py-4 text-right font-mono">৳{{ number_format($item['unit_cost'], 2) }}</td>
-                            <td class="px-6 py-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400">৳{{ number_format($item['capital_tied_up'], 2) }}</td>
-                            <td class="px-6 py-4 text-right text-xs text-slate-400">{{ $item['last_sale_date'] }}</td>
+                            <td class="px-6 py-4 text-xs">{{ $item['category'] ?? 'General' }}</td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-slate-900 dark:text-white">{{ $item['current_stock'] ?? $item['quantity_on_hand'] ?? 0 }}</td>
+                            <td class="px-6 py-4 text-right font-mono">৳{{ number_format($item['unit_cost'] ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400">৳{{ number_format($item['capital_tied_up'] ?? $item['tied_up_capital'] ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 text-right text-xs text-slate-400">{{ $item['last_sale_date'] ?? 'Never' }}</td>
                             <td class="px-6 py-4 text-center">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
-                                    {{ $item['days_without_sale'] >= 90 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' }}">
-                                    {{ $item['days_without_sale'] }} Days
+                                    {{ ($item['days_without_sale'] ?? $daysThreshold) >= 90 ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300' }}">
+                                    {{ $item['days_without_sale'] ?? $daysThreshold }} Days
                                 </span>
                             </td>
                         </tr>

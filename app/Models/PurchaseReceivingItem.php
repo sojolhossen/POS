@@ -45,4 +45,9 @@ class PurchaseReceivingItem extends Model
     {
         return $this->belongsTo(ProductVariant::class);
     }
+
+    public function getLandedCostAttribute()
+    {
+        return $this->landed_unit_cost;
+    }
 }

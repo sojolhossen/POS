@@ -52,4 +52,14 @@ class PurchaseReceiving extends Model
     {
         return $this->belongsTo(User::class, 'received_by');
     }
+
+    public function getReceivingDateAttribute()
+    {
+        return $this->received_at ?? $this->created_at;
+    }
+
+    public function getAllocatedAdditionalCostsAttribute()
+    {
+        return $this->additional_costs;
+    }
 }

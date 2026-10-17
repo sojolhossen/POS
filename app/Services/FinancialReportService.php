@@ -191,29 +191,40 @@ class FinancialReportService
         $slowMovingItems = [];
         foreach ($balancesQuery->get() as $balance) {
             $variant = $balance->variant;
-            if (!$variant) {
+            if (!$variant || !$variant->product) {
                 continue;
             }
 
-            // Check if sold recently
-            $recentSalesCount = PosSaleItem::where('product_variant_id', $variant->id)
-                ->whereHas('sale', function ($q) use ($sinceDate, $balance) {
-                    $q->where('store_id', $balance->store_id)
-                      ->where('created_at', '>=', $sinceDate);
+            // Find last sale of this variant in this store
+            $lastSaleItem = PosSaleItem::where('product_variant_id', $variant->id)
+                ->whereHas('sale', function ($q) use ($balance) {
+                    $q->where('store_id', $balance->store_id);
                 })
-                ->sum('quantity');
+                ->latest('id')
+                ->first();
 
-            if ($recentSalesCount == 0) {
+            $hasRecentSale = $lastSaleItem && $lastSaleItem->created_at >= $sinceDate;
+
+            if (!$hasRecentSale) {
                 $valuation = $balance->quantity_on_hand * (float) ($variant->weighted_average_cost ?? $variant->purchase_price ?? 0);
+                $lastSaleDate = $lastSaleItem ? $lastSaleItem->created_at->format('d M, Y') : 'Never';
+                $variantDetails = trim("{$variant->color} {$variant->size}");
+                $displayName = $variant->product->name . ($variantDetails ? " ({$variantDetails})" : '');
+
                 $slowMovingItems[] = [
-                    'store_name' => $balance->store->name,
+                    'store_name' => $balance->store?->name ?? 'N/A',
+                    'name' => $displayName,
                     'product_name' => $variant->product->name,
-                    'variant_title' => "{$variant->color} - {$variant->size}",
+                    'variant_title' => $variantDetails ?: 'Standard',
                     'sku' => $variant->sku,
                     'barcode' => $variant->barcode,
-                    'quantity_on_hand' => $balance->quantity_on_hand,
+                    'category' => $variant->product->category?->name ?? 'General',
+                    'current_stock' => (int) $balance->quantity_on_hand,
+                    'quantity_on_hand' => (int) $balance->quantity_on_hand,
                     'unit_cost' => (float) ($variant->weighted_average_cost ?? $variant->purchase_price ?? 0),
-                    'tied_up_capital' => $valuation,
+                    'capital_tied_up' => (float) $valuation,
+                    'tied_up_capital' => (float) $valuation,
+                    'last_sale_date' => $lastSaleDate,
                     'days_without_sale' => $thresholdDays,
                 ];
             }
@@ -241,8 +252,10 @@ class FinancialReportService
                 'cogs' => $statement['cogs'],
                 'gross_profit' => $statement['gross_profit'],
                 'operating_expenses' => $statement['operating_expenses'],
+                'expenses' => $statement['operating_expenses'],
                 'operating_profit' => $statement['operating_profit'],
                 'sales_count' => $statement['sales_count'],
+                'total_orders' => $statement['sales_count'],
             ];
         }
 

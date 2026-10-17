@@ -26,7 +26,7 @@
                 Supplier: {{ $purchaseOrder->supplier->name }}
             </h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Created by {{ $purchaseOrder->creator->name ?? 'System' }} on {{ $purchaseOrder->po_date->format('d M Y, h:i A') }} • Destination: {{ $purchaseOrder->destinationStore->name ?? 'Central Warehouse' }}
+                Created by {{ $purchaseOrder->creator->name ?? 'System' }} on {{ optional($purchaseOrder->po_date ?? $purchaseOrder->created_at)->format('d M Y, h:i A') ?? '—' }} • Destination: {{ $purchaseOrder->destinationStore->name ?? 'Central Warehouse' }}
             </p>
         </div>
 
@@ -166,7 +166,7 @@
                                     {{ $receiving->receiving_number }}
                                 </span>
                                 <span class="text-xs text-slate-500 ml-2">
-                                    Received on {{ $receiving->receiving_date->format('d M Y, h:i A') }} by {{ $receiving->receiver->name ?? 'Warehouse Staff' }}
+                                    Received on {{ optional($receiving->receiving_date ?? $receiving->received_at ?? $receiving->created_at)->format('d M Y, h:i A') ?? '—' }} by {{ $receiving->receiver->name ?? 'Warehouse Staff' }}
                                 </span>
                             </div>
                             <div class="text-xs font-mono text-slate-600 dark:text-slate-300">

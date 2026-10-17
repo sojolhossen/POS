@@ -14,20 +14,23 @@ window.initHardwareScanner = function(callback) {
     let lastKeyTime = Date.now();
 
     window.addEventListener('keydown', (e) => {
-        // Ignore if user is currently typing in an input or textarea
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        const isInputField = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
-
         const currentTime = Date.now();
-        if (currentTime - lastKeyTime > 100) {
-            buffer = '';
-        }
+        const interval = currentTime - lastKeyTime;
         lastKeyTime = currentTime;
 
+        // Barcode scanners input characters very rapidly (< 40-50ms between keys)
+        // If human is typing slowly (> 90ms gap), reset the scanner buffer
+        if (interval > 90) {
+            buffer = '';
+        }
+
         if (e.key === 'Enter') {
-            if (buffer.length >= 6) {
+            if (buffer.length >= 4) {
                 e.preventDefault();
-                callback(buffer);
+                const scannedCode = buffer;
+                buffer = '';
+                callback(scannedCode);
+            } else {
                 buffer = '';
             }
         } else if (e.key.length === 1) {

@@ -130,9 +130,14 @@
         @endif
 
         <div class="text-center">
-            <div class="header-title">{{ $sale->store->name ?? 'CLOTHING STORE BD' }}</div>
-            <div style="font-size: 10px;">{{ $sale->store->address ?? 'Level 3, Bashundhara City, Dhaka' }}</div>
-            <div style="font-size: 10px;">Phone: {{ $sale->store->phone ?? '01700-000000' }}</div>
+            @if(\App\Models\AppSetting::getAppLogo())
+                <div style="margin-bottom: 5px;">
+                    <img src="{{ \App\Models\AppSetting::getAppLogo() }}" alt="Logo" style="max-height: 38px; max-width: 140px; margin: 0 auto; display: block; object-fit: contain;">
+                </div>
+            @endif
+            <div class="header-title">{{ $sale->store->name ?? \App\Models\AppSetting::getAppName('CLOTHING STORE BD') }}</div>
+            <div style="font-size: 10px;">{{ $sale->store->address ?? \App\Models\AppSetting::getCompanyAddress() }}</div>
+            <div style="font-size: 10px;">Phone: {{ $sale->store->phone ?? \App\Models\AppSetting::getCompanyPhone() }}</div>
             @if($sale->store->bin_number)
                 <div style="font-size: 10px;">Mushak BIN: {{ $sale->store->bin_number }}</div>
             @endif
@@ -173,8 +178,7 @@
                             {{ $it->productVariant->color ?? 'Standard' }}/{{ $it->productVariant->size ?? 'Free' }}
                         </td>
                         <td class="text-right">{{ $it->quantity }}</td>
-                        <td class="text-right">{{ number_format($it->unit_price, 2) }}</td>
-                        <td class="text-right bold">{{ number_format($it->subtotal, 2) }}</td>
+                        <td class="text-right bold">{{ number_format($it->line_total ?? ($it->quantity * $it->unit_price - $it->discount_amount), 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -269,8 +273,7 @@
         <div class="text-center" style="font-size: 9px; line-height: 1.4;">
             <div><strong>7-DAY RETURN / EXCHANGE POLICY</strong></div>
             <div>ক্রয়ের ৭ দিনের মধ্যে ক্যাশ মেমো সহ পণ্য পরিবর্তন করা যাবে। (ট্যাগ এবং অব্যবহৃত থাকতে হবে)</div>
-            <div style="margin-top: 4px;">Thank you for shopping with us!</div>
-            <div>www.clothingstorebd.com</div>
+            <div style="margin-top: 4px;">{{ \App\Models\AppSetting::getReceiptFooter('Thank you for shopping with us! • www.fashionpos.bd') }}</div>
         </div>
     </div>
 </div>

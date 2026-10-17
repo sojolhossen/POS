@@ -51,6 +51,11 @@ class PosSaleItem extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
+    public function returnItems()
+    {
+        return $this->hasMany(PosReturnItem::class, 'original_pos_sale_item_id');
+    }
+
     public function returnableQuantity(): int
     {
         return max(0, $this->quantity - $this->quantity_returned);

@@ -4,171 +4,563 @@
 @section('header', 'Stock Transfer Challan')
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-6">
-    <!-- Top Action Bar -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2 mb-1">
-                <span class="font-mono text-xs font-bold px-2.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300">
+<div class="space-y-6">
+
+    <!-- Top Action Bar & Header Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <div class="space-y-2">
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <a href="{{ route('transfers.index') }}" class="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Stock Transfers
+                </a>
+                <span class="text-slate-300 dark:text-slate-700">/</span>
+                <span class="font-mono text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/70 px-2.5 py-0.5 rounded-lg border border-indigo-200/60 dark:border-indigo-900/60 shadow-xs">
                     {{ $transfer->reference_number }}
                 </span>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold
-                    @if($transfer->status === 'completed') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300
-                    @elseif($transfer->status === 'in_transit') bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300
-                    @elseif($transfer->status === 'approved') bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300
-                    @elseif($transfer->status === 'requested') bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300
-                    @else bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 @endif">
-                    {{ strtoupper(str_replace('_', ' ', $transfer->status)) }}
-                </span>
+
+                <!-- Status Badge -->
+                @if($transfer->status === 'completed')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Completed & Received
+                    </span>
+                @elseif($transfer->status === 'in_transit')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
+                        In Transit (On Road)
+                    </span>
+                @elseif($transfer->status === 'approved')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Approved by Super Admin
+                    </span>
+                @elseif($transfer->status === 'requested')
+                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        Awaiting Super Admin Approval
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 shadow-xs">
+                        {{ strtoupper($transfer->status) }}
+                    </span>
+                @endif
             </div>
-            <h1 class="text-xl font-black text-slate-900 dark:text-white">
-                {{ $transfer->sourceStore->name }} → {{ $transfer->destinationStore->name }}
-            </h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Requested by {{ $transfer->creator->name ?? 'Staff' }} on {{ $transfer->created_at->format('d M Y, h:i A') }}
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {{ $transfer->sourceStore->name }}
+                </h1>
+                <span class="text-slate-400 dark:text-slate-600 font-bold">➔</span>
+                <h1 class="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                    {{ $transfer->destinationStore->name }}
+                </h1>
+            </div>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <span>Requested on <strong>{{ $transfer->created_at->format('d M Y, h:i A') }}</strong> by <strong class="text-slate-700 dark:text-slate-300">{{ $transfer->creator->name ?? 'Staff' }}</strong></span>
+                @if($transfer->notes)
+                    <span class="text-slate-300 dark:text-slate-700">•</span>
+                    <span class="italic text-slate-500 dark:text-slate-400 font-medium">"{{ $transfer->notes }}"</span>
+                @endif
             </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('transfers.index') }}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
-                ← Back
-            </a>
-
-            <button onclick="window.print()" class="px-3 py-2 rounded-xl bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-bold transition flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                <span>Print Challan</span>
-            </button>
-
-            @if($transfer->status === 'requested' && (auth()->user()->isSuperAdmin() || auth()->user()->isStoreManager()))
-                <form method="POST" action="{{ route('transfers.approve', $transfer) }}" onsubmit="return confirm('Authorize this transfer for warehouse dispatch?');">
-                    @csrf
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition flex items-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Approve Transfer</span>
+        <!-- Action Controls -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- Enterprise Print Dropdown with Alpine.js -->
+            <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                <div class="inline-flex rounded-xl shadow-xs overflow-hidden border border-slate-200 dark:border-slate-700">
+                    <a href="{{ route('transfers.print', [$transfer, 'copy' => 'auto']) }}" target="_blank" class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        <span>Print Official Challan</span>
+                    </a>
+                    <button type="button" @click="open = !open" class="px-2.5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs border-l border-slate-300 dark:border-slate-600 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                </form>
+                </div>
+
+                <!-- Dropdown Menu for Role Specific Copies -->
+                <div x-show="open" x-cloak class="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-30 text-xs font-medium">
+                    <div class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-700/60">
+                        Select Role Copy / কপি নির্বাচন করুন
+                    </div>
+                    <a href="{{ route('transfers.print', [$transfer, 'copy' => 'auto']) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        <div>
+                            <div class="font-bold">Auto (My Role Copy)</div>
+                            <div class="text-[10px] text-slate-400">Current: {{ auth()->user()?->role_name ?? 'User' }}</div>
+                        </div>
+                    </a>
+                    <a href="{{ route('transfers.print', [$transfer, 'copy' => 'super_admin']) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        <span class="text-sm">🏢</span>
+                        <div>
+                            <div class="font-bold">Super Admin / Audit Copy</div>
+                            <div class="text-[10px] text-slate-400">With valuation & ledger ref</div>
+                        </div>
+                    </a>
+                    <a href="{{ route('transfers.print', [$transfer, 'copy' => 'warehouse_staff']) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        <span class="text-sm">📦</span>
+                        <div>
+                            <div class="font-bold">Warehouse & Gate Pass Copy</div>
+                            <div class="text-[10px] text-slate-400">Carton seals & security sign</div>
+                        </div>
+                    </a>
+                    <a href="{{ route('transfers.print', [$transfer, 'copy' => 'store_manager']) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                        <span class="text-sm">🏪</span>
+                        <div>
+                            <div class="font-bold">Store Receiving & Inward Copy</div>
+                            <div class="text-[10px] text-slate-400">Discrepancy & shelf inward</div>
+                        </div>
+                    </a>
+                    <div class="border-t border-slate-100 dark:border-slate-700/60 my-1"></div>
+                    <a href="{{ route('transfers.print', [$transfer, 'copy' => 'triplicate']) }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/40">
+                        <span class="text-sm">📑</span>
+                        <div>
+                            <div>Complete Triplicate (All 3 Copies)</div>
+                            <div class="text-[10px] text-slate-400 font-normal">Official 3-copy full set</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Approve Button (Top Action Bar) -->
+            @if($transfer->status === 'requested')
+                @if(auth()->user()?->isSuperAdmin())
+                    <form method="POST" action="{{ route('transfers.approve', $transfer) }}" onsubmit="return confirm('Authorize this transfer for dispatch? Only Super Admin has this authority.');" class="inline-block m-0">
+                        @csrf
+                        <button type="submit" class="px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md shadow-blue-600/30 transition flex items-center gap-1.5 cursor-pointer hover:opacity-95" style="background: #2563eb !important; color: #ffffff !important;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            <span>Approve Transfer (Super Admin)</span>
+                        </button>
+                    </form>
+                @else
+                    <div class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-xs font-semibold shadow-xs">
+                        <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>🔒 Awaiting Super Admin Approval</span>
+                    </div>
+                @endif
             @endif
 
             @if($transfer->status === 'approved')
-                <a href="{{ route('transfers.dispatch.view', $transfer) }}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5">
+                <a href="{{ route('transfers.dispatch.view', $transfer) }}" class="px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md shadow-purple-600/25 transition flex items-center gap-1.5" style="background: #7c3aed !important; color: #ffffff !important;">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
                     <span>Dispatch Stock (Reduce Source)</span>
                 </a>
             @endif
 
             @if($transfer->status === 'in_transit')
-                <a href="{{ route('transfers.receive.view', $transfer) }}" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Confirm Receiving at Destination</span>
-                </a>
+                @if(auth()->user()?->isSuperAdmin() || !auth()->user()?->store_id || auth()->user()?->store_id == $transfer->destination_store_id)
+                    <a href="{{ route('transfers.receive.view', $transfer) }}" class="px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition flex items-center gap-1.5" style="background: #059669 !important; color: #ffffff !important;">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Confirm Receiving at {{ $transfer->destinationStore->name }}</span>
+                    </a>
+                @else
+                    <div class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-purple-500 animate-ping"></span>
+                        <span>In Transit to {{ $transfer->destinationStore->name }}</span>
+                    </div>
+                @endif
             @endif
         </div>
     </div>
 
-    <!-- Official Gate Pass / Challan Document Layout -->
-    <div class="bg-white dark:bg-slate-900 rounded-xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" id="printable-challan">
-        <div class="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
-            <div>
-                <div class="text-xs uppercase tracking-widest text-slate-400 font-bold">Inter-Store Stock Movement Challan</div>
-                <h2 class="text-2xl font-black text-slate-900 dark:text-white mt-1">CLOTHING RETAIL NETWORK BD</h2>
-                <p class="text-xs text-slate-500 mt-1">Official Gate Pass & Goods Dispatched Note</p>
-            </div>
-
-            <!-- Transaction QR Code SVG Mock -->
-            <div class="text-center p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-                <svg class="w-16 h-16 text-slate-900 dark:text-white mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    <rect x="6" y="6" width="1" height="1" fill="currentColor"/>
-                    <rect x="17" y="6" width="1" height="1" fill="currentColor"/>
-                    <rect x="6" y="17" width="1" height="1" fill="currentColor"/>
-                    <path d="M14 14h3v3h-3zM17 17h4v4h-4z"/>
-                </svg>
-                <div class="text-[9px] font-mono text-slate-500 mt-1">{{ $transfer->reference_number }}</div>
-            </div>
-        </div>
-
-        <!-- Logistics Meta -->
-        <div class="grid grid-cols-2 gap-6 text-xs">
-            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1">
-                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Source (Origin)</div>
-                <div class="text-sm font-black text-slate-900 dark:text-white">{{ $transfer->sourceStore->name }}</div>
-                <div class="text-slate-500">Address: {{ $transfer->sourceStore->address ?? 'Warehouse Complex, Tejgaon, Dhaka' }}</div>
-                <div class="text-slate-500 font-mono">Store Code: {{ $transfer->sourceStore->code }}</div>
-            </div>
-
-            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-1">
-                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Destination (Target Outlet)</div>
-                <div class="text-sm font-black text-slate-900 dark:text-white">{{ $transfer->destinationStore->name }}</div>
-                <div class="text-slate-500">Address: {{ $transfer->destinationStore->address ?? 'Retail Outlet Branch' }}</div>
-                <div class="text-slate-500 font-mono">Store Code: {{ $transfer->destinationStore->code }}</div>
-            </div>
-        </div>
-
-        <!-- Challan Items Table -->
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs border-collapse">
-                <thead>
-                    <tr class="border-b-2 border-slate-800 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-bold">
-                        <th class="py-2.5">#</th>
-                        <th class="py-2.5">Garment Description</th>
-                        <th class="py-2.5 font-mono">SKU / Barcode</th>
-                        <th class="py-2.5 text-right">Requested</th>
-                        <th class="py-2.5 text-right">Dispatched</th>
-                        <th class="py-2.5 text-right text-emerald-600">Confirmed Rec.</th>
-                        <th class="py-2.5 text-right text-rose-600">Damaged</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
-                    @foreach($transfer->items as $idx => $it)
-                        <tr>
-                            <td class="py-2.5 font-mono text-slate-400">{{ $idx + 1 }}</td>
-                            <td class="py-2.5 font-semibold text-slate-900 dark:text-white">
-                                {{ $it->productVariant->product->name }}
-                                <span class="text-slate-400 font-normal">({{ $it->productVariant->color ?? 'Standard' }} / {{ $it->productVariant->size ?? 'Free' }})</span>
-                            </td>
-                            <td class="py-2.5 font-mono text-[11px] text-slate-500">{{ $it->productVariant->sku }}</td>
-                            <td class="py-2.5 text-right font-mono">{{ $it->quantity_requested }} pcs</td>
-                            <td class="py-2.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">{{ $it->quantity_dispatched }} pcs</td>
-                            <td class="py-2.5 text-right font-mono font-bold text-emerald-600">{{ $it->quantity_received }} pcs</td>
-                            <td class="py-2.5 text-right font-mono text-rose-600">{{ $it->quantity_damaged }} pcs</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Signatures & Audit Footprint -->
-        <div class="pt-8 border-t border-slate-200 dark:border-slate-800 grid grid-cols-4 gap-4 text-center text-xs">
-            <div class="space-y-8">
-                <div class="border-b border-slate-300 dark:border-slate-700 pb-1 font-semibold text-slate-700 dark:text-slate-300">
-                    {{ $transfer->creator->name ?? 'Requester' }}
+    <!-- Prominent Super Admin Approval Hero Banner (When Awaiting Approval) -->
+    @if($transfer->status === 'requested')
+        @if(auth()->user()?->isSuperAdmin())
+            <div class="rounded-2xl p-5 border border-blue-200 dark:border-blue-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4" style="background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%); color: #ffffff;">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center font-bold text-xl shrink-0 shadow-inner">
+                        ⚡
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">Super Admin Action</span>
+                            <h3 class="text-base font-extrabold text-white">Transfer Authorization Required</h3>
+                        </div>
+                        <p class="text-xs text-blue-100 mt-1">This transfer requisition has been placed by <strong>{{ $transfer->creator->name ?? 'Staff' }}</strong>. As Super Admin, click the button to officially approve this movement for warehouse dispatch.</p>
+                    </div>
                 </div>
-                <div class="text-[10px] text-slate-400 uppercase tracking-wider">Requisition Prepared</div>
+                <form method="POST" action="{{ route('transfers.approve', $transfer) }}" onsubmit="return confirm('Authorize this stock transfer for warehouse dispatch?');" class="shrink-0">
+                    @csrf
+                    <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95" style="background: #ffffff !important; color: #1e3a8a !important;">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                        <span>✓ Approve & Authorize Transfer Now</span>
+                    </button>
+                </form>
+            </div>
+        @else
+            <div class="rounded-2xl p-4 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 flex items-center justify-center text-lg shrink-0">
+                    🔒
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">Awaiting Super Admin Approval (অনুমোদনের অপেক্ষায়)</h4>
+                    <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">This requisition has been placed and is currently awaiting approval from the Super Administrator. Once approved, the source warehouse will dispatch the goods.</p>
+                </div>
+            </div>
+        @endif
+    @endif
+
+    <!-- Interactive Visual Stepper (Horizontal Lifecycle Tracker) -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+            <!-- Connecting Line on Desktop -->
+            <div class="hidden md:block absolute top-1/2 left-8 right-8 h-1 bg-slate-100 dark:bg-slate-800 -translate-y-4 -z-0"></div>
+
+            <!-- Step 1: Requisition -->
+            <div class="relative z-10 flex flex-col items-center text-center p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs bg-emerald-500 text-white shadow-sm mb-2 ring-4 ring-emerald-50 dark:ring-emerald-950/40">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 1</div>
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">Requisition Created</div>
+                <div class="text-[11px] text-slate-500 mt-1 font-medium">{{ $transfer->creator->name ?? 'Staff' }}</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">{{ $transfer->created_at->format('d M, h:i A') }}</div>
             </div>
 
-            <div class="space-y-8">
-                <div class="border-b border-slate-300 dark:border-slate-700 pb-1 font-semibold text-slate-700 dark:text-slate-300">
-                    {{ $transfer->approver->name ?? 'Pending' }}
+            <!-- Step 2: Super Admin Approval -->
+            @php $isApproved = in_array($transfer->status, ['approved', 'in_transit', 'completed']); @endphp
+            <div class="relative z-10 flex flex-col items-center text-center p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs {{ $isApproved ? 'bg-blue-600 text-white ring-4 ring-blue-50 dark:ring-blue-950/40 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-400' }} mb-2">
+                    @if($isApproved)
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    @else
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    @endif
                 </div>
-                <div class="text-[10px] text-slate-400 uppercase tracking-wider">Manager Approval</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider {{ $isApproved ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400' }}">Step 2</div>
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">Super Admin Approval</div>
+                <div class="text-[11px] {{ $isApproved ? 'text-slate-600 dark:text-slate-300 font-semibold' : 'text-slate-400' }} mt-1">
+                    {{ $transfer->approver->name ?? ($isApproved ? 'Super Admin' : 'Pending Approval') }}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                    {{ $transfer->approved_at ? $transfer->approved_at->format('d M, h:i A') : 'Awaiting' }}
+                </div>
             </div>
 
-            <div class="space-y-8">
-                <div class="border-b border-slate-300 dark:border-slate-700 pb-1 font-semibold text-slate-700 dark:text-slate-300">
-                    {{ $transfer->dispatcher->name ?? 'Pending' }}
+            <!-- Step 3: Warehouse Dispatch -->
+            @php $isDispatched = in_array($transfer->status, ['in_transit', 'completed']); @endphp
+            <div class="relative z-10 flex flex-col items-center text-center p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs {{ $isDispatched ? 'bg-purple-600 text-white ring-4 ring-purple-50 dark:ring-purple-950/40 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-400' }} mb-2">
+                    @if($isDispatched)
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    @else
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                    @endif
                 </div>
-                <div class="text-[10px] text-slate-400 uppercase tracking-wider">Warehouse Dispatcher</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider {{ $isDispatched ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400' }}">Step 3</div>
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">Dispatched & In Transit</div>
+                <div class="text-[11px] {{ $isDispatched ? 'text-slate-600 dark:text-slate-300 font-semibold' : 'text-slate-400' }} mt-1">
+                    {{ $transfer->dispatcher->name ?? ($isDispatched ? 'Warehouse Staff' : 'Pending Dispatch') }}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                    {{ $transfer->dispatched_at ? $transfer->dispatched_at->format('d M, h:i A') : 'Pending' }}
+                </div>
             </div>
 
-            <div class="space-y-8">
-                <div class="border-b border-slate-300 dark:border-slate-700 pb-1 font-semibold text-slate-700 dark:text-slate-300">
-                    {{ $transfer->receiver->name ?? 'Pending' }}
+            <!-- Step 4: Destination Receipt -->
+            @php $isCompleted = $transfer->status === 'completed'; @endphp
+            <div class="relative z-10 flex flex-col items-center text-center p-3 rounded-xl bg-white dark:bg-slate-900 border {{ $isCompleted ? 'border-emerald-300 dark:border-emerald-800 ring-2 ring-emerald-500/20' : 'border-slate-200/80 dark:border-slate-800/80' }} shadow-xs">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs {{ $isCompleted ? 'bg-emerald-600 text-white ring-4 ring-emerald-50 dark:ring-emerald-950/40 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-400' }} mb-2">
+                    @if($isCompleted)
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    @else
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    @endif
                 </div>
-                <div class="text-[10px] text-slate-400 uppercase tracking-wider">Destination Receiver</div>
+                <div class="text-[11px] font-bold uppercase tracking-wider {{ $isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400' }}">Step 4</div>
+                <div class="text-xs font-black text-slate-800 dark:text-slate-100 mt-0.5">Verified & Received</div>
+                <div class="text-[11px] {{ $isCompleted ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-slate-400' }} mt-1">
+                    {{ $transfer->receiver->name ?? ($isCompleted ? 'Store Staff' : 'Awaiting Receipt') }}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                    {{ $transfer->received_at ? $transfer->received_at->format('d M, h:i A') : 'Pending' }}
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Logistics Route & Store Information Card -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Origin Store -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <div class="space-y-1 min-w-0">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Source Store / Dispatch Warehouse</div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white truncate">{{ $transfer->sourceStore->name }}</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $transfer->sourceStore->address ?? 'Central Logistics Facility' }}</p>
+                <div class="inline-block font-mono text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                    Code: {{ $transfer->sourceStore->code }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Destination Store -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div class="space-y-1 min-w-0">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Destination Store (Target Retail Outlet)</div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white truncate">{{ $transfer->destinationStore->name }}</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $transfer->destinationStore->address ?? 'Retail Outlet Branch' }}</p>
+                <div class="inline-block font-mono text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded">
+                    Code: {{ $transfer->destinationStore->code }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Garments & Items Table Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    <span>Transferred Garments & Stock Items</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Itemized reconciliation of units requested, dispatched, received, and discrepancies.</p>
+            </div>
+            <span class="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg text-slate-700 dark:text-slate-300">
+                {{ $transfer->items->count() }} Line {{ Str::plural('Item', $transfer->items->count()) }}
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-50/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200/80 dark:border-slate-800">
+                        <th class="py-3 px-4 w-12 text-center">#</th>
+                        <th class="py-3 px-4">Garment / Product Description</th>
+                        <th class="py-3 px-4 font-mono">SKU / Barcode</th>
+                        <th class="py-3 px-4 text-right">Requested</th>
+                        <th class="py-3 px-4 text-right">Dispatched</th>
+                        <th class="py-3 px-4 text-right text-emerald-600 dark:text-emerald-400">Confirmed Rec.</th>
+                        <th class="py-3 px-4 text-right text-rose-600 dark:text-rose-400">Discrepancy</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    @foreach($transfer->items as $idx => $it)
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-3 px-4 text-center font-mono text-slate-400 font-medium">{{ $idx + 1 }}</td>
+                            <td class="py-3 px-4">
+                                <div class="font-bold text-slate-900 dark:text-white text-sm">
+                                    {{ $it->productVariant?->product?->name ?? 'Product' }}
+                                </div>
+                                <div class="flex items-center gap-1.5 mt-1">
+                                    @if($it->productVariant?->color)
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                            Color: {{ $it->productVariant->color }}
+                                        </span>
+                                    @endif
+                                    @if($it->productVariant?->size)
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                            Size: {{ $it->productVariant->size }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 font-mono text-[11px] text-slate-500">
+                                <div>{{ $it->productVariant->sku ?? 'N/A' }}</div>
+                                @if($it->productVariant?->barcode)
+                                    <div class="text-[10px] text-slate-400">{{ $it->productVariant->barcode }}</div>
+                                @endif
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
+                                <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs">
+                                    {{ $it->quantity_requested }} pcs
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
+                                <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">
+                                    {{ $it->quantity_dispatched }} pcs
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                <span class="bg-emerald-50 dark:bg-emerald-950/60 px-2 py-1 rounded text-xs">
+                                    {{ $it->quantity_received }} pcs
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-right font-mono text-rose-600 dark:text-rose-400">
+                                @if(($it->quantity_discrepancy ?? 0) != 0)
+                                    <span class="bg-rose-50 dark:bg-rose-950/60 px-2 py-1 rounded text-xs font-bold">
+                                        {{ $it->quantity_discrepancy }} pcs
+                                    </span>
+                                @else
+                                    <span class="text-slate-300 dark:text-slate-700 font-bold">&mdash;</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <!-- Summary Totals Footer -->
+                <tfoot class="bg-slate-50/90 dark:bg-slate-800/80 font-bold border-t-2 border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <td colspan="3" class="py-3 px-4 text-right text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                            Total Sum:
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200 text-xs">
+                            {{ $transfer->items->sum('quantity_requested') }} pcs
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-indigo-700 dark:text-indigo-300 text-xs">
+                            {{ $transfer->items->sum('quantity_dispatched') }} pcs
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-emerald-600 dark:text-emerald-400 text-xs">
+                            {{ $transfer->items->sum('quantity_received') }} pcs
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-rose-600 dark:text-rose-400 text-xs">
+                            {{ $transfer->items->sum('quantity_discrepancy') }} pcs
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Chain of Custody & Audit Footprint -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 space-y-6">
+        <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <span>Chain of Custody & Official Signatures (দায়িত্বশীল কর্মকর্তাদের স্বাক্ষর ও ট্র্যাকিং)</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Every step is verified and permanently linked to the respective officer's identity.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 1. Creator -->
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-200 shrink-0">
+                    {{ strtoupper(substr($transfer->creator->name ?? 'U', 0, 2)) }}
+                </div>
+                <div class="min-w-0 space-y-0.5">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">1. Requisition Prepared</div>
+                    <div class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ $transfer->creator->name ?? 'Requester' }}</div>
+                    <div class="text-xs text-slate-500">{{ $transfer->creator?->role_name ?? 'Staff' }}</div>
+                    <div class="text-[10px] text-slate-400 font-mono">{{ $transfer->created_at->format('d M Y, h:i A') }}</div>
+                </div>
+            </div>
+
+            <!-- 2. Super Admin Approval -->
+            <div class="p-4 rounded-xl border {{ $transfer->approver ? 'border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30' }} flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full {{ $transfer->approver ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400' }} flex items-center justify-center font-bold text-xs shrink-0">
+                    @if($transfer->approver)
+                        {{ strtoupper(substr($transfer->approver->name ?? 'SA', 0, 2)) }}
+                    @else
+                        🔒
+                    @endif
+                </div>
+                <div class="min-w-0 space-y-0.5">
+                    <div class="text-[10px] font-bold uppercase tracking-wider {{ $transfer->approver ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400' }}">2. Super Admin Approval</div>
+                    <div class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {{ $transfer->approver->name ?? 'Awaiting Super Admin' }}
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        {{ $transfer->approver ? 'Super Admin' : 'Super Admin Only' }}
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">
+                        {{ $transfer->approved_at ? $transfer->approved_at->format('d M Y, h:i A') : 'Pending' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Dispatcher -->
+            <div class="p-4 rounded-xl border {{ $transfer->dispatcher ? 'border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30' }} flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full {{ $transfer->dispatcher ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400' }} flex items-center justify-center font-bold text-xs shrink-0">
+                    {{ $transfer->dispatcher ? strtoupper(substr($transfer->dispatcher->name, 0, 2)) : '⏳' }}
+                </div>
+                <div class="min-w-0 space-y-0.5">
+                    <div class="text-[10px] font-bold uppercase tracking-wider {{ $transfer->dispatcher ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400' }}">3. Stock Dispatcher</div>
+                    <div class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {{ $transfer->dispatcher->name ?? 'Pending Dispatch' }}
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        {{ $transfer->dispatcher?->role_name ?? 'Source Store' }}
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">
+                        {{ $transfer->dispatched_at ? $transfer->dispatched_at->format('d M Y, h:i A') : 'Pending' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Verified Receiver -->
+            <div class="p-4 rounded-xl border {{ $transfer->receiver ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30' }} flex items-start gap-3">
+                <div class="w-9 h-9 rounded-full {{ $transfer->receiver ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 dark:bg-slate-700 text-slate-400' }} flex items-center justify-center font-bold text-xs shrink-0">
+                    {{ $transfer->receiver ? strtoupper(substr($transfer->receiver->name, 0, 2)) : '📥' }}
+                </div>
+                <div class="min-w-0 space-y-0.5">
+                    <div class="text-[10px] font-bold uppercase tracking-wider {{ $transfer->receiver ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-400' }} flex items-center gap-1">
+                        <span>4. Destination Receiver</span>
+                        @if($transfer->receiver)
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        @endif
+                    </div>
+                    <div class="text-sm font-black text-slate-900 dark:text-white truncate">
+                        {{ $transfer->receiver->name ?? 'Pending Arrival' }}
+                    </div>
+                    <div class="text-xs text-slate-500">
+                        {{ $transfer->receiver ? $transfer->receiver->role_name : $transfer->destinationStore->name . ' Staff' }}
+                    </div>
+                    <div class="text-[10px] text-slate-400 font-mono">
+                        {{ $transfer->received_at ? $transfer->received_at->format('d M Y, h:i A') : 'Awaiting receipt' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Audit Trail Log -->
+        @if($transfer->auditLogs && $transfer->auditLogs->count() > 0)
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>System Audit Trail History</span>
+                </h4>
+                <div class="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-100 dark:border-slate-800">
+                            <tr>
+                                <th class="p-2.5">Event Action</th>
+                                <th class="p-2.5">Officer / User</th>
+                                <th class="p-2.5">Designation</th>
+                                <th class="p-2.5">Timestamp</th>
+                                <th class="p-2.5">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @foreach($transfer->auditLogs as $log)
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                                    <td class="p-2.5 font-mono">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold
+                                            @if(str_contains($log->action, 'received')) bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300
+                                            @elseif(str_contains($log->action, 'approved')) bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300
+                                            @elseif(str_contains($log->action, 'dispatched')) bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300
+                                            @else bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 @endif">
+                                            {{ $log->action }}
+                                        </span>
+                                    </td>
+                                    <td class="p-2.5 font-semibold text-slate-800 dark:text-slate-200">
+                                        {{ $log->user->name ?? 'System' }}
+                                    </td>
+                                    <td class="p-2.5 text-slate-500">
+                                        {{ $log->user?->role_name ?? 'N/A' }}
+                                    </td>
+                                    <td class="p-2.5 font-mono text-slate-400">
+                                        {{ $log->created_at->format('d M Y, h:i:s A') }}
+                                    </td>
+                                    <td class="p-2.5 text-slate-600 dark:text-slate-300">
+                                        {{ $log->reason ?? '-' }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+    </div>
+
 </div>
 @endsection

@@ -69,4 +69,9 @@ class StockTransfer extends Model
     {
         return $this->hasMany(StockTransferItem::class);
     }
+
+    public function auditLogs()
+    {
+        return $this->morphMany(AuditLog::class, 'auditable')->with('user')->orderBy('id', 'desc');
+    }
 }

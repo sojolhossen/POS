@@ -164,7 +164,7 @@
                                             {{ $po->po_number }}
                                         </a>
                                     </td>
-                                    <td class="p-2.5 text-slate-500">{{ $po->po_date->format('d M Y') }}</td>
+                                    <td class="p-2.5 text-slate-500">{{ optional($po->po_date ?? $po->created_at)->format('d M Y') ?? '—' }}</td>
                                     <td class="p-2.5 text-center">
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold
                                             @if($po->status === 'completed') bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300
