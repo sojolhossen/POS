@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\StockTransactionType;
+use App\Models\Attendance;
 use App\Models\DailyCashRegister;
+use App\Models\Employee;
 use App\Models\Expense;
 use App\Models\FinancialAccount;
 use App\Models\PosReturn;
@@ -16,7 +18,9 @@ use App\Models\StockLedger;
 use App\Models\StockTransfer;
 use App\Models\StockTransferItem;
 use App\Models\Store;
+use App\Models\StoreCashTransfer;
 use App\Models\Supplier;
+use App\Services\CashRegisterService;
 use App\Services\FinancialReportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,28 +185,107 @@ class DashboardController extends Controller
 
     protected function storeManagerDashboard($user)
     {
-        $store = $user->store ?? Store::first();
         $today = now()->format('Y-m-d');
 
-        $financials = $this->reportService->getIncomeStatement($store);
-        $cashRegister = DailyCashRegister::where('store_id', $store?->id)->where('business_date', $today)->first();
-
-        $pendingTransfers = StockTransfer::where('destination_store_id', $store?->id)
-            ->whereIn('status', ['requested', 'in_transit'])
+        // Stores accessible to this manager
+        $assignedStores = Store::where('is_active', true)
+            ->where(function ($q) use ($user) {
+                $q->where('manager_id', $user->id);
+                if ($user->store_id) {
+                    $q->orWhere('id', $user->store_id);
+                }
+            })
+            ->orderBy('name')
             ->get();
 
+        if ($assignedStores->isEmpty()) {
+            $assignedStores = Store::where('is_active', true)->where('is_warehouse', false)->get();
+        }
+
+        $selectedStoreId = request('store_id');
+        if ($selectedStoreId && $assignedStores->contains('id', $selectedStoreId)) {
+            $store = $assignedStores->firstWhere('id', $selectedStoreId);
+        } else {
+            $store = $assignedStores->first() ?? Store::first();
+        }
+
+        $financials = $this->reportService->getIncomeStatement($store);
+
+        // Daily Register and Suggested Opening
+        $cashRegister = DailyCashRegister::where('store_id', $store?->id)->where('business_date', $today)->first();
+        $suggestedOpening = ($cashRegister || !$store)
+            ? null
+            : app(CashRegisterService::class)->getSuggestedOpeningCash($store);
+
+        // Today's Sales
+        $todaySalesQuery = PosSale::where('store_id', $store?->id)
+            ->whereDate('created_at', $today)
+            ->where('status', 'completed');
+        $todaySalesTotal = (float) (clone $todaySalesQuery)->sum('total_payable');
+        $todayOrdersCount = (clone $todaySalesQuery)->count();
+        $avgOrderValue = $todayOrdersCount > 0 ? round($todaySalesTotal / $todayOrdersCount, 2) : 0.00;
+
+        // Today's Remittances to Owner
+        $todayTransfers = StoreCashTransfer::where('store_id', $store?->id)
+            ->whereDate('transferred_at', $today)
+            ->get();
+        $todayTransfersTotal = (float) $todayTransfers->sum('amount');
+        $pendingTransfersToOwnerCount = $todayTransfers->where('status', 'pending')->count();
+
+        // Today's Expenses
+        $todayExpensesTotal = (float) Expense::where('store_id', $store?->id)
+            ->whereDate('expense_date', $today)
+            ->sum('amount');
+
+        // Recent sales today
+        $recentSales = PosSale::where('store_id', $store?->id)
+            ->whereDate('created_at', $today)
+            ->with(['customer', 'cashier'])
+            ->latest()
+            ->limit(7)
+            ->get();
+
+        // Incoming Stock Transfers
+        $pendingTransfers = StockTransfer::where('destination_store_id', $store?->id)
+            ->whereIn('status', ['requested', 'approved', 'in_transit'])
+            ->with(['sourceStore'])
+            ->latest()
+            ->limit(6)
+            ->get();
+
+        // Low stock alerts
         $lowStockItems = StockBalance::where('store_id', $store?->id)
             ->where('quantity_on_hand', '<=', 5)
             ->where('quantity_on_hand', '>', 0)
             ->with(['productVariant.product'])
+            ->limit(6)
             ->get();
+        $outOfStockCount = StockBalance::where('store_id', $store?->id)
+            ->where('quantity_on_hand', '<=', 0)
+            ->count();
+
+        // Staff attendance today
+        $storeEmployeesCount = Employee::where('store_id', $store?->id)->where('employment_status', 'active')->count();
+        $presentStaffCount = Attendance::where('store_id', $store?->id)->whereDate('date', $today)->where('status', 'present')->count();
 
         return view('dashboards.store_manager', compact(
             'store',
+            'assignedStores',
             'financials',
             'cashRegister',
+            'suggestedOpening',
+            'todaySalesTotal',
+            'todayOrdersCount',
+            'avgOrderValue',
+            'todayTransfersTotal',
+            'pendingTransfersToOwnerCount',
+            'todayExpensesTotal',
+            'recentSales',
             'pendingTransfers',
-            'lowStockItems'
+            'lowStockItems',
+            'outOfStockCount',
+            'storeEmployeesCount',
+            'presentStaffCount'
         ));
     }
 
