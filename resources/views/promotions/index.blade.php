@@ -55,8 +55,23 @@
                             <td class="p-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400">
                                 {{ $promo->discount_percentage }}% OFF
                             </td>
-                            <td class="p-3 text-slate-600 dark:text-slate-300">
-                                {{ $promo->category ? $promo->category->name : 'All Products / Storewide' }}
+                            <td class="p-3 text-slate-700 dark:text-slate-300">
+                                @if($promo->product)
+                                    <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                        <span>Product: {{ $promo->product->name }}</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-400 font-mono mt-0.5">SKU: {{ $promo->product->sku }}</div>
+                                @elseif($promo->category)
+                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
+                                        <span>Category: {{ $promo->category->name }}</span>
+                                    </div>
+                                @else
+                                    <span class="text-slate-500 font-medium">Storewide (All Products)</span>
+                                @endif
+                                @if($promo->min_spend > 0)
+                                    <div class="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Min spend: ৳{{ number_format($promo->min_spend, 0) }}</div>
+                                @endif
                             </td>
                             <td class="p-3 text-slate-500 font-mono text-[11px]">
                                 {{ $promo->starts_at->format('d M Y') }} → {{ $promo->ends_at->format('d M Y') }}
@@ -77,13 +92,18 @@
                                 @endif
                             </td>
                             <td class="p-3 text-right">
-                                <form method="POST" action="{{ route('promotions.toggle', $promo) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-2.5 py-1 rounded text-[11px] font-semibold transition
-                                        {{ $promo->is_active ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/60' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60' }}">
-                                        {{ $promo->is_active ? 'Deactivate' : 'Activate' }}
-                                    </button>
-                                </form>
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <a href="{{ route('promotions.edit', $promo) }}" class="px-2.5 py-1 rounded text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition">
+                                        Edit
+                                    </a>
+                                    <form method="POST" action="{{ route('promotions.toggle', $promo) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="px-2.5 py-1 rounded text-[11px] font-semibold transition
+                                            {{ $promo->is_active ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/60' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/60' }}">
+                                            {{ $promo->is_active ? 'Deactivate' : 'Activate' }}
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

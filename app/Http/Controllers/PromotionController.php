@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Promotion;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PromotionController extends Controller
 {
@@ -15,14 +17,15 @@ class PromotionController extends Controller
 
     public function index()
     {
-        $promotions = Promotion::with(['category', 'creator'])->latest()->paginate(15);
+        $promotions = Promotion::with(['category', 'product', 'creator'])->latest()->paginate(15);
         return view('promotions.index', compact('promotions'));
     }
 
     public function create()
     {
         $categories = Category::all();
-        return view('promotions.create', compact('categories'));
+        $products = Product::active()->orderBy('name')->get();
+        return view('promotions.create', compact('categories', 'products'));
     }
 
     public function store(Request $request)
@@ -34,6 +37,7 @@ class PromotionController extends Controller
             'starts_at' => 'required|date',
             'ends_at' => 'required|date|after:starts_at',
             'category_id' => 'nullable|exists:categories,id',
+            'product_id' => 'nullable|exists:products,id',
             'min_spend' => 'nullable|numeric|min:0',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -51,6 +55,59 @@ class PromotionController extends Controller
         );
 
         return redirect()->route('promotions.index')->with('success', "Promotion {$promotion->name} created successfully.");
+    }
+
+    public function edit(Promotion $promotion)
+    {
+        $categories = Category::all();
+        $products = Product::active()->orderBy('name')->get();
+        return view('promotions.edit', compact('promotion', 'categories', 'products'));
+    }
+
+    public function update(Request $request, Promotion $promotion)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:150',
+            'code' => ['required', 'string', 'max:50', Rule::unique('promotions', 'code')->ignore($promotion->id)],
+            'discount_percentage' => 'required|numeric|min:0.5|max:90',
+            'starts_at' => 'required|date',
+            'ends_at' => 'required|date|after:starts_at',
+            'category_id' => 'nullable|exists:categories,id',
+            'product_id' => 'nullable|exists:products,id',
+            'min_spend' => 'nullable|numeric|min:0',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean',
+        ]);
+
+        $oldValues = $promotion->toArray();
+        $promotion->update($validated);
+
+        AuditService::log(
+            action: 'promotion.updated',
+            auditable: $promotion,
+            oldValues: $oldValues,
+            newValues: $validated,
+            reason: "Updated promotion {$promotion->name}"
+        );
+
+        return redirect()->route('promotions.index')->with('success', "Promotion {$promotion->name} updated successfully.");
+    }
+
+    public function destroy(Promotion $promotion)
+    {
+        $name = $promotion->name;
+        $oldValues = $promotion->toArray();
+        $promotion->delete();
+
+        AuditService::log(
+            action: 'promotion.deleted',
+            auditable: $promotion,
+            oldValues: $oldValues,
+            newValues: null,
+            reason: "Deleted promotion {$name}"
+        );
+
+        return redirect()->route('promotions.index')->with('success', "Promotion {$name} deleted successfully.");
     }
 
     public function toggle(Promotion $promotion)

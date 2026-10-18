@@ -17,6 +17,7 @@ class Promotion extends Model
         'ends_at',
         'is_active',
         'category_id',
+        'product_id',
         'min_spend',
         'description',
         'created_by',
@@ -29,6 +30,11 @@ class Promotion extends Model
         'ends_at' => 'datetime',
         'is_active' => 'boolean',
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 
     public function category()
     {

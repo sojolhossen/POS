@@ -102,8 +102,20 @@ class PosCheckoutService
 
                 // Evaluate promotion discount (non-stacking, single promotion rule)
                 $lineDiscount = 0.0;
-                if ($promotion && (!$promotion->category_id || $promotion->category_id == $variant->product->category_id)) {
-                    $lineDiscount = round($lineSubtotal * ($promotion->discount_percentage / 100), 2);
+                if ($promotion) {
+                    $isApplicable = true;
+                    // Product-specific check
+                    if ($promotion->product_id && $variant->product_id != $promotion->product_id) {
+                        $isApplicable = false;
+                    }
+                    // Category-specific check
+                    if ($promotion->category_id && $variant->product->category_id != $promotion->category_id) {
+                        $isApplicable = false;
+                    }
+
+                    if ($isApplicable) {
+                        $lineDiscount = round($lineSubtotal * ($promotion->discount_percentage / 100), 2);
+                    }
                 }
 
                 $lineTotal = $lineSubtotal - $lineDiscount;
@@ -119,6 +131,21 @@ class PosCheckoutService
                     'discount_amount' => $lineDiscount,
                     'line_total' => $lineTotal,
                 ];
+            }
+
+            // If promotion requires minimum cart spend and it was not reached, or product promo was not applied, clear discount
+            if ($promotion) {
+                if ($promotion->min_spend > 0 && $totalSubtotal < (float) $promotion->min_spend) {
+                    $totalDiscount = 0.0;
+                    foreach ($saleLines as &$line) {
+                        $line['discount_amount'] = 0.0;
+                        $line['line_total'] = $line['unit_price'] * $line['quantity'];
+                    }
+                    unset($line);
+                    $promotion = null;
+                } elseif ($totalDiscount <= 0.0 && ($promotion->product_id || $promotion->category_id)) {
+                    $promotion = null;
+                }
             }
 
             // Step 2: Handle Loyalty Points Redemption (1 point = ৳1 BDT)

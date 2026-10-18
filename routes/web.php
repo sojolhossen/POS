@@ -265,6 +265,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/promotions', [PromotionController::class, 'index'])->name('promotions.index');
         Route::get('/promotions/create', [PromotionController::class, 'create'])->name('promotions.create');
         Route::post('/promotions', [PromotionController::class, 'store'])->name('promotions.store');
+        Route::get('/promotions/{promotion}/edit', [PromotionController::class, 'edit'])->name('promotions.edit');
+        Route::put('/promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
+        Route::delete('/promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
         Route::post('/promotions/{promotion}/toggle', [PromotionController::class, 'toggle'])->name('promotions.toggle');
     });
 

@@ -276,19 +276,54 @@
                 </div>
             </div>
 
-            <!-- PROMOTION & CAMPAIGN RULE (SUPER ADMIN DEFINED) -->
-            <div class="space-y-1">
-                <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Scheduled Promotion (Non-Stacking)
-                </label>
-                <select x-model="selectedPromotion" class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-2.5 py-1.5">
-                    <option value="">No Promotion Applied</option>
-                    @foreach($activePromotions as $promo)
-                        <option value="{{ $promo->code }}">
-                            {{ $promo->name }} ({{ number_format($promo->discount_percentage, 0) }}% OFF)
-                        </option>
-                    @endforeach
-                </select>
+            <!-- PROMOTION & CAMPAIGN RULE (SUPER ADMIN DEFINED - PRODUCT / CATEGORY AWARE) -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                        <span>Product / Order Discounts</span>
+                    </label>
+                    <span x-show="availablePromotions().length > 0" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60" x-text="availablePromotions().length + ' coupon(s) available'"></span>
+                </div>
+
+                <!-- Empty Cart State -->
+                <div x-show="cart.length === 0" class="text-[11px] text-slate-400 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Add products to cart to reveal matching discount coupons.</span>
+                </div>
+
+                <!-- Cart Has Items, but No Eligible Promotions -->
+                <div x-show="cart.length > 0 && availablePromotions().length === 0" class="text-[11px] text-slate-400 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>No active discount coupon applies to the items in cart.</span>
+                </div>
+
+                <!-- Eligible Promotions Available for Current Cart -->
+                <div x-show="availablePromotions().length > 0" class="space-y-2">
+                    <select x-model="selectedPromotion" class="w-full text-xs rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-2.5 py-2 font-medium focus:ring-1 focus:ring-indigo-500">
+                        <option value="">No Promotion Applied</option>
+                        <template x-for="promo in availablePromotions()" :key="promo.code">
+                            <option :value="promo.code" x-text="promo.label"></option>
+                        </template>
+                    </select>
+
+                    <!-- Quick Clickable Coupon Cards / Pills -->
+                    <div class="flex flex-wrap gap-1.5 pt-0.5">
+                        <template x-for="promo in availablePromotions()" :key="promo.code">
+                            <button type="button" 
+                                    @click="selectedPromotion = (selectedPromotion === promo.code ? '' : promo.code)"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition border cursor-pointer"
+                                    :class="selectedPromotion === promo.code 
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-600'">
+                                <svg x-show="selectedPromotion === promo.code" class="w-3.5 h-3.5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                <svg x-show="selectedPromotion !== promo.code" class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                <span class="font-mono" x-text="promo.code"></span>
+                                <span class="font-normal text-[10px]" x-text="'(' + promo.discount_percentage + '% OFF)'"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
             </div>
 
             <!-- FINANCIAL TOTALS BREAKDOWN -->
@@ -583,10 +618,15 @@ function posApp() {
         selectedPromotion: '',
         activePromotions: {!! json_encode($activePromotions->map(function($p) {
             return [
+                'id' => $p->id,
                 'code' => $p->code,
                 'name' => $p->name,
                 'discount_percentage' => (float) $p->discount_percentage,
+                'product_id' => $p->product_id,
+                'product_name' => $p->product?->name,
+                'product_sku' => $p->product?->sku,
                 'category_id' => $p->category_id,
+                'category_name' => $p->category?->name,
                 'min_spend' => (float) ($p->min_spend ?? 0),
             ];
         })->values()) !!},
@@ -627,9 +667,10 @@ function posApp() {
                 console.warn('Could not read cached POS cart from localStorage', e);
             }
 
-            // Watch cart changes and automatically persist to localStorage
+            // Watch cart changes and automatically persist to localStorage and check coupon eligibility
             this.$watch('cart', (val) => {
                 this.persistCart();
+                this.checkPromotionValidity();
             });
             this.$watch('customerPhone', (val) => {
                 try { localStorage.setItem('pos_active_customer_phone', val || ''); } catch (e) {}
@@ -829,6 +870,12 @@ function posApp() {
             }, 6000);
         },
 
+        persistCart() {
+            try {
+                localStorage.setItem('pos_active_cart', JSON.stringify(this.cart || []));
+            } catch (e) {}
+        },
+
         addToCart(item) {
             let existing = this.cart.find(c => c.variant_id === item.id);
             const availableStock = Number(item.available_stock !== undefined ? item.available_stock : 0);
@@ -846,6 +893,7 @@ function posApp() {
                 }
                 this.cart.push({
                     variant_id: item.id,
+                    product_id: item.product_id || null,
                     name: item.name,
                     color: item.color,
                     size: item.size,
@@ -859,6 +907,7 @@ function posApp() {
             }
             this.searchResults = [];
             this.searchQuery = '';
+            this.checkPromotionValidity();
             this.$nextTick(() => {
                 if (this.$refs.barcodeInput) {
                     this.$refs.barcodeInput.focus();
@@ -872,6 +921,7 @@ function posApp() {
                 this.triggerStockWarning(`Stock Warning: "${line.name}" only has ${line.available_stock} pcs available.`);
             }
             line.quantity += 1;
+            this.checkPromotionValidity();
         },
 
         decrementQty(idx) {
@@ -880,15 +930,18 @@ function posApp() {
             } else {
                 this.removeLine(idx);
             }
+            this.checkPromotionValidity();
         },
 
         removeLine(idx) {
             this.cart.splice(idx, 1);
+            this.checkPromotionValidity();
         },
 
         clearCart() {
             if (confirm('Clear all items from current cart?')) {
                 this.cart = [];
+                this.selectedPromotion = '';
             }
         },
 
@@ -898,6 +951,56 @@ function posApp() {
 
         subtotal() {
             return this.cart.reduce((sum, line) => sum + (line.price * line.quantity), 0);
+        },
+
+        /**
+         * Dynamic coupons that are valid for the products currently inside the cart.
+         * If a coupon is assigned to a specific product, it only appears if that product is in the cart!
+         */
+        availablePromotions() {
+            if (!this.cart || this.cart.length === 0) {
+                return [];
+            }
+
+            const currentProductIds = this.cart.map(i => Number(i.product_id)).filter(Boolean);
+            const currentCategoryIds = this.cart.map(i => Number(i.category_id)).filter(Boolean);
+
+            return this.activePromotions.filter(promo => {
+                // If promotion is restricted to a specific product:
+                if (promo.product_id) {
+                    return currentProductIds.includes(Number(promo.product_id));
+                }
+
+                // If promotion is restricted to a category:
+                if (promo.category_id) {
+                    return currentCategoryIds.includes(Number(promo.category_id));
+                }
+
+                // Storewide promotion: valid for any cart
+                return true;
+            }).map(promo => {
+                let badge = '';
+                if (promo.product_id) {
+                    badge = ` (For: ${promo.product_name || 'Product'})`;
+                } else if (promo.category_id) {
+                    badge = ` (Cat: ${promo.category_name || 'Category'})`;
+                } else {
+                    badge = ' (Storewide)';
+                }
+
+                return {
+                    ...promo,
+                    label: `${promo.name} - ${Number(promo.discount_percentage)}% OFF${badge}`
+                };
+            });
+        },
+
+        checkPromotionValidity() {
+            if (!this.selectedPromotion) return;
+            const validCodes = this.availablePromotions().map(p => p.code);
+            if (!validCodes.includes(this.selectedPromotion)) {
+                this.selectedPromotion = '';
+            }
         },
 
         promoDiscount() {
@@ -912,16 +1015,29 @@ function posApp() {
                 return 0;
             }
 
-            if (promo.category_id) {
+            // Product-specific discount: ONLY discounts the specific product's lines
+            if (promo.product_id) {
                 let eligibleSubtotal = 0;
                 this.cart.forEach(item => {
-                    if (item.category_id == promo.category_id) {
+                    if (Number(item.product_id) === Number(promo.product_id)) {
                         eligibleSubtotal += (item.price * item.quantity);
                     }
                 });
                 return Math.round((eligibleSubtotal * (rate / 100)) * 100) / 100;
             }
 
+            // Category-specific discount: ONLY discounts that category's lines
+            if (promo.category_id) {
+                let eligibleSubtotal = 0;
+                this.cart.forEach(item => {
+                    if (Number(item.category_id) === Number(promo.category_id)) {
+                        eligibleSubtotal += (item.price * item.quantity);
+                    }
+                });
+                return Math.round((eligibleSubtotal * (rate / 100)) * 100) / 100;
+            }
+
+            // Storewide discount
             return Math.round((this.subtotal() * (rate / 100)) * 100) / 100;
         },
 

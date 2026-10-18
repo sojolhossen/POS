@@ -62,16 +62,57 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Category Restriction (Optional)
+                    Minimum Cart Spend (৳ BDT - Optional)
                 </label>
-                <select name="category_id" class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2">
-                    <option value="">All Categories / Storewide</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>
-                            {{ $cat->name }}
-                        </option>
-                    @endforeach
-                </select>
+                <input type="number" step="1" min="0" name="min_spend" value="{{ old('min_spend', '0') }}"
+                       placeholder="e.g. 1000 (0 for no minimum)"
+                       class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 font-mono">
+            </div>
+        </div>
+
+        <!-- Scope & Restrictions: Specific Product OR Category OR Storewide -->
+        <div class="p-4 rounded-xl bg-indigo-50/50 dark:bg-slate-800/60 border border-indigo-100 dark:border-slate-700/80 space-y-3">
+            <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                <span>Applicable Merchandise Scope (Product or Category)</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Specific Product Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Specific Product (Recommended)
+                    </label>
+                    <select name="product_id" class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2">
+                        <option value="">-- No Product Restriction (All Products) --</option>
+                        @foreach($products as $prod)
+                            <option value="{{ $prod->id }}" {{ old('product_id') == $prod->id ? 'selected' : '' }}>
+                                {{ $prod->name }} (SKU: {{ $prod->sku }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        If selected, during POS checkout this coupon will <strong>ONLY appear when this product is in the cart</strong>.
+                    </p>
+                </div>
+
+                <!-- Category Restriction Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Or Category Restriction
+                    </label>
+                    <select name="category_id" class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2">
+                        <option value="">-- All Categories / Storewide --</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}" {{ old('category_id') == $cat->id ? 'selected' : '' }}>
+                                {{ $cat->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Applied if no specific product is selected above.
+                    </p>
+                </div>
             </div>
         </div>
 

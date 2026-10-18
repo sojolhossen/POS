@@ -34,7 +34,7 @@ class PosController extends Controller
             ->where('business_date', $today)
             ->first();
 
-        $activePromotions = Promotion::active()->get();
+        $activePromotions = Promotion::active()->with(['product', 'category'])->get();
         $recentSales = PosSale::where('store_id', $store->id)->latest()->take(5)->get();
 
         return view('pos.index', compact('store', 'register', 'activePromotions', 'recentSales'));
@@ -79,6 +79,7 @@ class PosController extends Controller
                 'name' => $v->product->name,
                 'size' => $v->size,
                 'color' => $v->color,
+                'product_id' => $v->product_id,
                 'category_id' => $v->product->category_id,
                 'price' => (float) $v->effective_selling_price,
                 'available_stock' => $balance ? $balance->available_quantity : 0,
