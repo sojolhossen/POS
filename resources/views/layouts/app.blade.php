@@ -572,10 +572,94 @@
                 <!-- Right Header Controls -->
                 <div class="flex items-center gap-2 sm:gap-3">
                     
-                    <!-- Live Status Badge -->
-                    <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                        <span>BDT (৳) Online Hub</span>
+                    <!-- Role-Scoped Live Store Balance & Online Hub Badge -->
+                    <div class="relative" x-data="{ balanceOpen: false }" @click.outside="balanceOpen = false">
+                        <button type="button" 
+                                @click="balanceOpen = !balanceOpen"
+                                class="flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100/70 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 transition shadow-2xs cursor-pointer group"
+                                title="Click to view store balance details">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
+                            <div class="flex items-center gap-1.5 text-xs font-bold leading-none">
+                                <span class="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 font-medium hidden sm:inline">BDT (৳)</span>
+                                <span class="font-mono font-black text-emerald-900 dark:text-emerald-100 text-xs sm:text-sm">
+                                    ৳{{ number_format($headerBalanceData['liveBalance'] ?? 0, 2) }}
+                                </span>
+                                <span class="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 font-normal hidden lg:inline">
+                                    • {{ $headerBalanceData['scopeName'] ?? 'Live Hub' }}
+                                </span>
+                            </div>
+                            <svg class="w-3 h-3 text-emerald-500 group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+
+                        <!-- Popover Breakdown for Store Balances -->
+                        <div x-show="balanceOpen" 
+                             x-cloak 
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1 scale-95"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 translate-y-1 scale-95"
+                             class="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-4 z-50 text-xs">
+                            
+                            <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                                <div>
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Live Business Balance</div>
+                                    <div class="text-xs font-black text-slate-900 dark:text-white mt-0.5">
+                                        {{ $headerBalanceData['scopeName'] ?? 'Assigned Store' }}
+                                    </div>
+                                </div>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                    Today Active
+                                </span>
+                            </div>
+
+                            <div class="py-2.5 space-y-1.5 border-b border-slate-100 dark:border-slate-800">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400 text-xs">Drawer Cash in Hand (Live):</span>
+                                    <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                        ৳{{ number_format($headerBalanceData['liveBalance'] ?? 0, 2) }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500 dark:text-slate-400 text-xs">Total Sales Today:</span>
+                                    <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">
+                                        ৳{{ number_format($headerBalanceData['todaySales'] ?? 0, 2) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            @if(!empty($headerBalanceData['storeBreakdown']))
+                                <div class="pt-2.5">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Store Breakdown (আজকের ব্যালেন্স)</div>
+                                    <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                        @foreach($headerBalanceData['storeBreakdown'] as $sb)
+                                            <div class="flex items-center justify-between py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-[11px]">
+                                                <div class="min-w-0 pr-2">
+                                                    <div class="font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $sb['name'] }}</div>
+                                                    <div class="text-[10px] text-slate-400 font-mono">{{ $sb['code'] }} {{ $sb['is_warehouse'] ? '• Warehouse' : '' }}</div>
+                                                </div>
+                                                <div class="text-right shrink-0">
+                                                    <div class="font-mono font-bold {{ $sb['balance'] > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500' }}">
+                                                        ৳{{ number_format($sb['balance'], 2) }}
+                                                    </div>
+                                                    <span class="text-[9px] {{ $sb['has_open_register'] ? 'text-emerald-500 font-semibold' : 'text-slate-400' }}">
+                                                        {{ $sb['has_open_register'] ? '● Register Open' : '○ No Register Today' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
+                                <span>Business Date: {{ now()->format('d M Y') }}</span>
+                                <a href="{{ route('daily-registers.index') }}" class="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    Daily Registers &rarr;
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Language Switcher Form -->

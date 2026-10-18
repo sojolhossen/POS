@@ -30,5 +30,12 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Blade::directive('posDate', function ($expression) {
             return "<?php echo \App\Helpers\FormattingHelper::date($expression); ?>";
         });
+
+        \Illuminate\Support\Facades\View::composer('layouts.app', function ($view) {
+            if (auth()->check()) {
+                $balanceService = app(\App\Services\StoreBalanceService::class);
+                $view->with('headerBalanceData', $balanceService->getHeaderBalanceData(auth()->user()));
+            }
+        });
     }
 }
