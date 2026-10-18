@@ -234,4 +234,9 @@ return [
     'reopen_reason_placeholder' => 'Mandatory reason to reopen...',
     'view_breakdown' => 'Breakdown',
     'hide_breakdown' => 'Hide Breakdown',
+    'unclosed_register_detected' => 'Unclosed Cash Register from Previous Day Detected!',
+    'unclosed_register_sub' => 'Please close the previous day cash drawer before opening today. You can Quick-Close in 1 click or manually count cash.',
+    'quick_close_with_expected' => '1-Click Quick Close with Expected Cash',
+    'manual_count_close' => 'Count & Close Manually',
+    'close_previous_drawer_btn' => 'Close Drawer',
 ];

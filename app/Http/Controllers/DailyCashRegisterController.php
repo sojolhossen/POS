@@ -60,12 +60,14 @@ class DailyCashRegisterController extends Controller
         $today = now()->format('Y-m-d');
 
         $todayRegister = null;
+        $unclosedPreviousRegister = null;
         $suggestedOpening = null;
         if ($currentStore) {
             $todayRegister = DailyCashRegister::where('store_id', $currentStore->id)
                 ->where('business_date', $today)
                 ->first();
 
+            $unclosedPreviousRegister = $this->cashRegisterService->getUnclosedPreviousRegister($currentStore);
             $suggestedOpening = $this->cashRegisterService->getSuggestedOpeningCash($currentStore);
         }
 
@@ -84,6 +86,7 @@ class DailyCashRegisterController extends Controller
         return view('daily_registers.index', compact(
             'registers',
             'todayRegister',
+            'unclosedPreviousRegister',
             'currentStore',
             'accessibleStores',
             'suggestedOpening',

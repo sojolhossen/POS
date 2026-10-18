@@ -239,4 +239,77 @@ class CashContinuityAndRemittanceTest extends TestCase
         $this->assertEquals(350.00, (float) $register->cash_expenses_amount);
         $this->assertEquals(2650.00, (float) $register->cash_in_hand_expected);
     }
+
+    public function test_unclosed_previous_day_register_is_detected_and_can_be_quick_closed()
+    {
+        $service = app(CashRegisterService::class);
+
+        // Day 1: Manager opens with 3,000 and sells 5,000 cash -> expected 8,000
+        $day1 = $service->openRegister($this->store, $this->manager, 3000.00);
+        $service->recordCashSale($this->store, 5000.00);
+        $day1->refresh();
+        $this->assertEquals(8000.00, (float) $day1->cash_in_hand_expected);
+
+        // Simulate Day 1 was yesterday and was NEVER closed
+        $day1->update(['business_date' => now()->subDay()->format('Y-m-d')]);
+
+        // Detection: Service detects unclosed previous day register
+        $unclosed = $service->getUnclosedPreviousRegister($this->store);
+        $this->assertNotNull($unclosed);
+        $this->assertEquals($day1->id, $unclosed->id);
+        $this->assertTrue($unclosed->isOpen());
+
+        // UI renders unclosed recovery banner
+        $this->actingAs($this->manager);
+        $response = $this->get(route('daily-registers.index', ['store_id' => $this->store->id]));
+        $response->assertOk();
+        $response->assertSee('ACTION REQUIRED');
+        $response->assertSee(number_format(8000.00, 2));
+
+        // Quick-close yesterday's register with expected cash
+        $closeResponse = $this->post(route('daily-registers.close', $day1), [
+            'closing_cash_counted' => 8000.00,
+            'discrepancy_reason' => 'Previous day quick close on next morning',
+        ]);
+        $closeResponse->assertRedirect();
+
+        $day1->refresh();
+        $this->assertEquals('closed', $day1->status);
+        $this->assertEquals(8000.00, (float) $day1->closing_cash_counted);
+        $this->assertEquals(0.00, (float) $day1->discrepancy_amount);
+
+        // Now Day 2 opening suggests the 8,000 carryover
+        $suggested = $service->getSuggestedOpeningCash($this->store);
+        $this->assertTrue($suggested['has_previous']);
+        $this->assertFalse($suggested['is_unclosed']);
+        $this->assertEquals(8000.00, (float) $suggested['suggested_amount']);
+
+        // Open Day 2
+        $day2 = $service->openRegister($this->store, $this->manager, 8000.00);
+        $this->assertEquals(8000.00, (float) $day2->opening_cash);
+        $this->assertEquals('open', $day2->status);
+    }
+
+    public function test_opening_next_day_register_automatically_reconciles_unclosed_previous_register()
+    {
+        $service = app(CashRegisterService::class);
+
+        // Day 1: Open with 4,000 and sell 2,000 -> expected 6,000 (left unclosed)
+        $day1 = $service->openRegister($this->store, $this->manager, 4000.00);
+        $service->recordCashSale($this->store, 2000.00);
+        $day1->update(['business_date' => now()->subDay()->format('Y-m-d')]);
+
+        // Day 2: Open register directly without manual close
+        $day2 = $service->openRegister($this->store, $this->manager, 6000.00);
+
+        // Verify Day 1 was auto-closed by system
+        $day1->refresh();
+        $this->assertEquals('closed', $day1->status);
+        $this->assertEquals(6000.00, (float) $day1->closing_cash_counted);
+        $this->assertStringContainsString('Auto-closed', $day1->discrepancy_reason);
+
+        // Verify Day 2 is open
+        $this->assertEquals('open', $day2->status);
+        $this->assertEquals(6000.00, (float) $day2->opening_cash);
+    }
 }

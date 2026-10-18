@@ -49,6 +49,7 @@ class CashRegisterService
                 'previous_date' => $prevRegister->business_date->format('d M Y'),
                 'previous_register_id' => $prevRegister->id,
                 'previous_counted' => $prevRegister->closing_cash_counted !== null,
+                'is_unclosed' => $prevRegister->isOpen(),
             ];
         }
 
@@ -58,7 +59,21 @@ class CashRegisterService
             'previous_date' => null,
             'previous_register_id' => null,
             'previous_counted' => false,
+            'is_unclosed' => false,
         ];
+    }
+
+    /**
+     * Get unclosed previous cash register for a store strictly before today.
+     */
+    public function getUnclosedPreviousRegister(Store $store): ?DailyCashRegister
+    {
+        $today = now()->format('Y-m-d');
+        return DailyCashRegister::where('store_id', $store->id)
+            ->where('business_date', '<', $today)
+            ->where('status', 'open')
+            ->latest('business_date')
+            ->first();
     }
 
     /**
@@ -83,6 +98,18 @@ class CashRegisterService
                     throw new Exception("Cash register is already open for {$store->name} for today ({$today}).");
                 }
                 throw new Exception("Cash register for {$today} is already closed. Please request an authorized supervisor to reopen.");
+            }
+
+            // If an unclosed register exists from a previous date, auto-close it with expected cash
+            // to preserve ledger audit trail and prevent dangling unclosed sessions.
+            $unclosed = $this->getUnclosedPreviousRegister($store);
+            if ($unclosed) {
+                $this->closeRegister(
+                    $unclosed,
+                    $user,
+                    (float) $unclosed->cash_in_hand_expected,
+                    "Auto-closed on next business day ({$today}) opening by {$user->name}."
+                );
             }
 
             // Check suggested opening cash carryover

@@ -235,4 +235,9 @@ return [
     'reopen_reason_placeholder' => 'রি-ওপেন করার কারণ লিখুন...',
     'view_breakdown' => 'হিসাবের ব্রেকডাউন',
     'hide_breakdown' => 'হাইড সামারি',
+    'unclosed_register_detected' => 'বিগত দিনের ক্যাশ ড্রয়ার বন্ধ (Close) করা হয়নি!',
+    'unclosed_register_sub' => 'আগের দিনের ড্রয়ার ক্লোজ না করে নতুন দিন শুরু করা যাবে না। নিচে ১-ক্লিকে অথবা ক্যাশ গুনে আগের দিনের ড্রয়ার ক্লোজ করে নিন।',
+    'quick_close_with_expected' => '১-ক্লিকে আগের দিনের ড্রয়ার ক্লোজ করুন',
+    'manual_count_close' => 'ক্যাশ গুনে ড্রয়ার ক্লোজ করুন',
+    'close_previous_drawer_btn' => 'আগের ড্রয়ার ক্লোজ করুন',
 ];

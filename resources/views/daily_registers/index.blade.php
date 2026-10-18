@@ -53,6 +53,88 @@
         </div>
     @endif
 
+    <!-- UNCLOSED PREVIOUS REGISTER WARNING & RECOVERY CARD (OPTION 1 IMPLEMENTATION) -->
+    @if(isset($unclosedPreviousRegister) && $unclosedPreviousRegister)
+        <div class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40 rounded-2xl border-2 border-amber-400 dark:border-amber-600 p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shrink-0 font-bold shadow-md shadow-amber-500/30 animate-pulse">
+                        ⚠️
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-black text-amber-900 dark:text-amber-100 uppercase tracking-wide">
+                                {{ __('messages.unclosed_register_detected') }}
+                            </h2>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-bounce">
+                                ACTION REQUIRED
+                            </span>
+                        </div>
+                        <p class="text-xs text-amber-800 dark:text-amber-200 mt-1">
+                            {{ $unclosedPreviousRegister->store->name }} এর <strong>{{ $unclosedPreviousRegister->business_date->format('d M Y') }}</strong> তারিখের ক্যাশ ড্রয়ার বন্ধ (Close) করা হয়নি। ড্রয়ারে আনুমানিক প্রত্যাশিত ক্যাশ: <strong class="font-mono text-sm text-slate-900 dark:text-white font-black">৳{{ number_format($unclosedPreviousRegister->expected_closing_cash, 2) }}</strong>।
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2 QUICK RECOVERY OPTIONS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-amber-300/60 dark:border-amber-700/60">
+                <!-- OPTION A: 1-Click Quick Close with Expected Cash -->
+                <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 flex flex-col justify-between space-y-2">
+                    <div>
+                        <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">সহজ পদ্ধতি (১-ক্লিক সমাধান)</span>
+                        <h3 class="text-xs font-bold text-slate-900 dark:text-white mt-0.5">প্রত্যাশিত ক্যাশ (৳{{ number_format($unclosedPreviousRegister->expected_closing_cash, 2) }}) দিয়ে ক্লোজ করুন</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            গতকাল দোকান বন্ধের সময় যদি ড্রয়ারের টাকা সুরক্ষিত রেখে যাওয়া হয়ে থাকে, তবে কোনো গরমিল ছাড়া ১-ক্লিকেই আগের দিনের ড্রয়ার ক্লোজ করে নিন।
+                        </p>
+                    </div>
+                    <form method="POST" action="{{ route('daily-registers.close', $unclosedPreviousRegister) }}">
+                        @csrf
+                        <input type="hidden" name="closing_cash_counted" value="{{ $unclosedPreviousRegister->expected_closing_cash }}">
+                        <input type="hidden" name="discrepancy_reason" value="Previous day quick close on next morning opening">
+                        <button type="submit" onclick="return confirm('গতকালকের ড্রয়ার ৳{{ number_format($unclosedPreviousRegister->expected_closing_cash, 2) }} ব্যালেন্স দিয়ে ক্লোজ করবেন?');"
+                                class="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5">
+                            <span>⚡ ১-ক্লিকে গতকালের ড্রয়ার ক্লোজ করুন</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- OPTION B: Count & Close (Manual Count) -->
+                <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 flex flex-col justify-between space-y-2"
+                     x-data="{ showManualClose: false }">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ম্যানুয়াল পদ্ধতি</span>
+                        <h3 class="text-xs font-bold text-slate-900 dark:text-white mt-0.5">ক্যাশ গুনে ড্রয়ার ক্লোজ করুন</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            গতকালকের ড্রয়ারের ক্যাশে কোনো কম/বেশি থাকলে প্রকৃত গোনা টাকা লিখে কারণসহ ড্রয়ার ক্লোজ করুন।
+                        </p>
+                    </div>
+                    <div>
+                        <button type="button" @click="showManualClose = !showManualClose"
+                                class="w-full py-2 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 font-bold text-xs transition">
+                            <span x-text="showManualClose ? 'ফর্ম লুকান' : 'ক্যাশ গুনে ক্লোজ ফর্ম খুলুন &darr;'">ক্যাশ গুনে ক্লোজ ফর্ম খুলুন &darr;</span>
+                        </button>
+                        
+                        <form x-show="showManualClose" x-cloak method="POST" action="{{ route('daily-registers.close', $unclosedPreviousRegister) }}" class="mt-3 space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            @csrf
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">গতকালকের প্রকৃত গোনা টাকা (৳):</label>
+                                <input type="number" step="0.01" min="0" name="closing_cash_counted" required value="{{ $unclosedPreviousRegister->expected_closing_cash }}" class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-2.5 py-1.5 font-mono font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">গরমিলের কারণ (যদি থাকে):</label>
+                                <input type="text" name="discrepancy_reason" placeholder="যেমন: খুচরো শর্ট বা অন্যান্য..." class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-2.5 py-1.5">
+                            </div>
+                            <button type="submit" onclick="return confirm('গতকালকের ড্রয়ার ক্লোজ করতে নিশ্চিত?');" class="w-full py-2 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition">
+                                সংরক্ষণ ও ক্লোজ করুন
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- HERO ACTIVE REGISTER COMPACT MINIMAL STRIP -->
     @if($todayRegister)
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition overflow-hidden">
@@ -418,6 +500,7 @@
                         <th class="p-3 text-right">Counted</th>
                         <th class="p-3 text-right">Variance</th>
                         <th class="p-3 text-center">Status</th>
+                        <th class="p-3 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
@@ -459,10 +542,25 @@
                                     {{ $reg->status }}
                                 </span>
                             </td>
+                            <td class="p-3 text-right font-sans">
+                                @if($reg->isOpen())
+                                    <form method="POST" action="{{ route('daily-registers.close', $reg) }}" class="inline-block">
+                                        @csrf
+                                        <input type="hidden" name="closing_cash_counted" value="{{ $reg->expected_closing_cash }}">
+                                        <input type="hidden" name="discrepancy_reason" value="Quick-closed from registers history ledger">
+                                        <button type="submit" onclick="return confirm('{{ __('messages.close_and_lock') }} ({{ $reg->business_date->format('d M Y') }})?');"
+                                                class="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] shadow-xs transition whitespace-nowrap">
+                                            ⚡ Quick Close
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-slate-400 text-[11px]">—</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="p-6 text-center text-slate-400 font-sans">
+                            <td colspan="12" class="p-6 text-center text-slate-400 font-sans">
                                 No history records found.
                             </td>
                         </tr>
