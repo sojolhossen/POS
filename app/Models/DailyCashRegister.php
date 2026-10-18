@@ -13,10 +13,14 @@ class DailyCashRegister extends Model
         'store_id',
         'business_date',
         'opening_cash',
+        'opening_discrepancy_amount',
+        'opening_discrepancy_reason',
         'opened_by',
         'opened_at',
         'cash_sales_amount',
         'cash_refunds_amount',
+        'cash_expenses_amount',
+        'cash_transfers_amount',
         'cash_in_hand_expected',
         'closing_cash_counted',
         'discrepancy_amount',
@@ -32,8 +36,11 @@ class DailyCashRegister extends Model
     protected $casts = [
         'business_date' => 'date',
         'opening_cash' => 'decimal:2',
+        'opening_discrepancy_amount' => 'decimal:2',
         'cash_sales_amount' => 'decimal:2',
         'cash_refunds_amount' => 'decimal:2',
+        'cash_expenses_amount' => 'decimal:2',
+        'cash_transfers_amount' => 'decimal:2',
         'cash_in_hand_expected' => 'decimal:2',
         'closing_cash_counted' => 'decimal:2',
         'discrepancy_amount' => 'decimal:2',
@@ -67,6 +74,11 @@ class DailyCashRegister extends Model
         return $this->belongsTo(User::class, 'reopened_by');
     }
 
+    public function cashTransfers()
+    {
+        return $this->hasMany(StoreCashTransfer::class, 'daily_cash_register_id');
+    }
+
     public function isOpen(): bool
     {
         return in_array($this->status, ['open', 'reopened']);
@@ -80,6 +92,16 @@ class DailyCashRegister extends Model
     public function getCashRefundsAttribute(): float
     {
         return (float) $this->cash_refunds_amount;
+    }
+
+    public function getCashExpensesAttribute(): float
+    {
+        return (float) $this->cash_expenses_amount;
+    }
+
+    public function getCashTransfersAttribute(): float
+    {
+        return (float) $this->cash_transfers_amount;
     }
 
     public function getExpectedClosingCashAttribute(): float

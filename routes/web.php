@@ -242,13 +242,23 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/returns', [PosReturnController::class, 'store'])->name('returns.store');
     Route::get('/returns/receipt/{posReturn}', [PosReturnController::class, 'receipt'])->name('returns.receipt');
 
-    // Daily Cash Registers
+    // Daily Cash Registers & Drawer Cash Management
     Route::get('/daily-registers', [DailyCashRegisterController::class, 'index'])->name('daily-registers.index');
     Route::post('/daily-registers/open', [DailyCashRegisterController::class, 'open'])->name('daily-registers.open');
     Route::post('/daily-registers/{register}/close', [DailyCashRegisterController::class, 'close'])->name('daily-registers.close');
     Route::post('/daily-registers/{register}/reopen', [DailyCashRegisterController::class, 'reopen'])
         ->middleware('role:super_admin,store_manager')
         ->name('daily-registers.reopen');
+    Route::post('/daily-registers/transfer-cash', [DailyCashRegisterController::class, 'transferCash'])
+        ->name('daily-registers.transfer-cash');
+    Route::post('/daily-registers/transfers/{transfer}/approve', [DailyCashRegisterController::class, 'approveTransfer'])
+        ->middleware('role:super_admin')
+        ->name('daily-registers.transfers.approve');
+    Route::post('/daily-registers/transfers/{transfer}/reject', [DailyCashRegisterController::class, 'rejectTransfer'])
+        ->middleware('role:super_admin')
+        ->name('daily-registers.transfers.reject');
+    Route::post('/daily-registers/record-expense', [DailyCashRegisterController::class, 'recordExpense'])
+        ->name('daily-registers.record-expense');
 
     // Scheduled Promotions (Super Admin ONLY)
     Route::middleware('role:super_admin')->group(function () {

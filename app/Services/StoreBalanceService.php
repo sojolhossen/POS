@@ -81,8 +81,14 @@ class StoreBalanceService
 
         foreach ($stores as $st) {
             $storeRegs = $registers->get($st->id, collect());
-            // Store balance is sum of expected cash in active/today's registers
-            $storeBalance = (float) $storeRegs->sum('cash_in_hand_expected');
+            if ($storeRegs->isNotEmpty()) {
+                // Store balance is sum of expected cash in active/today's registers
+                $storeBalance = (float) $storeRegs->sum('cash_in_hand_expected');
+            } else {
+                // If not opened yet today, fallback to latest register closing balance
+                $latestRegister = DailyCashRegister::where('store_id', $st->id)->latest('business_date')->first();
+                $storeBalance = $latestRegister ? (float) ($latestRegister->closing_cash_counted ?? $latestRegister->cash_in_hand_expected) : 0.0;
+            }
             $totalLiveBalance += $storeBalance;
 
             $hasOpenRegister = $storeRegs->contains(fn($r) => $r->isOpen());
