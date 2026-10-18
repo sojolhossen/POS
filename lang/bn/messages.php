@@ -233,4 +233,6 @@ return [
     'cash_remitted' => 'মালিককে পাঠানো',
     'reopen_day' => 'দিন রি-ওপেন করুন',
     'reopen_reason_placeholder' => 'রি-ওপেন করার কারণ লিখুন...',
+    'view_breakdown' => 'হিসাবের ব্রেকডাউন',
+    'hide_breakdown' => 'হাইড সামারি',
 ];

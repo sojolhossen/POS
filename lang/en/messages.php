@@ -232,4 +232,6 @@ return [
     'cash_remitted' => 'Remitted',
     'reopen_day' => 'Reopen Day',
     'reopen_reason_placeholder' => 'Mandatory reason to reopen...',
+    'view_breakdown' => 'Breakdown',
+    'hide_breakdown' => 'Hide Breakdown',
 ];

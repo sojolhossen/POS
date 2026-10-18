@@ -6,6 +6,7 @@
 @section('content')
 <div class="space-y-6" x-data="{
     activeTab: 'remittances',
+    showDetails: false,
     showClosingForm: false,
     showExpenseModal: false,
     showTransferModal: false,
@@ -52,52 +53,76 @@
         </div>
     @endif
 
-    <!-- HERO ACTIVE REGISTER CARD -->
+    <!-- HERO ACTIVE REGISTER COMPACT MINIMAL STRIP -->
     @if($todayRegister)
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
-            <!-- Top Status Row -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
-                <div class="flex items-center gap-3">
-                    <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                        {{ $todayRegister->isOpen() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }}">
-                        ● {{ $todayRegister->status }}
-                    </span>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm transition overflow-hidden">
+            <!-- MAIN COMPACT STRIP -->
+            <div class="p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <!-- Left: Live Balance & Store Status -->
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl {{ $todayRegister->isOpen() ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' }} flex items-center justify-center text-xl shrink-0 font-bold border border-emerald-100 dark:border-emerald-900/40">
+                        ৳
+                    </div>
                     <div>
-                        <div class="text-xs font-bold text-slate-900 dark:text-white">
-                            {{ $todayRegister->store->name }} — {{ $todayRegister->business_date->format('l, d M Y') }}
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                {{ __('messages.current_drawer_cash') }}
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider
+                                {{ $todayRegister->isOpen() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $todayRegister->isOpen() ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400' }}"></span>
+                                {{ $todayRegister->status }}
+                            </span>
                         </div>
-                        <div class="text-[11px] text-slate-400">
-                            {{ __('messages.opened_by') }}: {{ $todayRegister->opener->name ?? 'Staff' }} ({{ $todayRegister->opened_at->format('h:i A') }})
+                        <div class="flex items-baseline gap-2 mt-0.5">
+                            <span class="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900 dark:text-white">
+                                ৳{{ number_format($todayRegister->expected_closing_cash, 2) }}
+                            </span>
+                            <span class="text-xs text-slate-400 hidden sm:inline">
+                                • {{ $todayRegister->store->name }} ({{ $todayRegister->business_date->format('d M') }})
+                            </span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Right: Quick Action Buttons & Details Toggle -->
                 <div class="flex items-center gap-2 flex-wrap">
                     @if($todayRegister->isOpen())
-                        <!-- Quick Action 1: Record Drawer Expense -->
+                        <!-- Details Toggle Button -->
+                        <button type="button" @click="showDetails = !showDetails"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
+                            <span>📊</span>
+                            <span class="hidden sm:inline" x-text="showDetails ? '{{ __('messages.hide_breakdown') }}' : '{{ __('messages.view_breakdown') }}'">{{ __('messages.view_breakdown') }}</span>
+                            <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="showDetails ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+
+                        <!-- Quick Action: Expense -->
                         <button type="button" @click="showExpenseModal = true"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition">
-                            <span>💸 {{ __('messages.record_drawer_expense') }}</span>
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold text-xs transition">
+                            <span>💸</span>
+                            <span>{{ __('messages.record_drawer_expense') }}</span>
                         </button>
 
-                        <!-- Quick Action 2: Transfer Cash to Owner -->
+                        <!-- Quick Action: Remit -->
                         <button type="button" @click="showTransferModal = true"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition">
-                            <span>🏦 {{ __('messages.remit_cash_to_owner') }}</span>
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition">
+                            <span>🏦</span>
+                            <span>{{ __('messages.remit_cash_to_owner') }}</span>
                         </button>
 
-                        <!-- Quick Action 3: Toggle Evening Close Form -->
+                        <!-- Quick Action: Close -->
                         <button type="button" @click="showClosingForm = !showClosingForm"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs transition">
-                            <span>🔒 {{ __('messages.close_drawer_btn') }}</span>
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition">
+                            <span>🔒</span>
+                            <span>{{ __('messages.close_drawer_btn') }}</span>
                         </button>
                     @elseif(auth()->user()->isStoreManager() || auth()->user()->isSuperAdmin())
                         <!-- Reopen Form -->
                         <form method="POST" action="{{ route('daily-registers.reopen', $todayRegister) }}" class="flex items-center gap-2">
                             @csrf
                             <input type="text" name="reopen_reason" required placeholder="{{ __('messages.reopen_reason_placeholder') }}"
-                                   class="text-xs rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-1.5 w-52">
-                            <button type="submit" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition whitespace-nowrap">
+                                   class="text-xs rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-1.5 w-48">
+                            <button type="submit" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition whitespace-nowrap">
                                 {{ __('messages.reopen_day') }}
                             </button>
                         </form>
@@ -105,49 +130,48 @@
                 </div>
             </div>
 
-            <!-- Focal Cash In Drawer Display -->
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 py-2">
-                <div>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                        {{ __('messages.current_drawer_cash') }}
-                    </span>
-                    <div class="text-3xl sm:text-4xl font-black font-mono tracking-tight text-indigo-600 dark:text-indigo-400 mt-1">
-                        ৳{{ number_format($todayRegister->expected_closing_cash, 2) }}
+            <!-- COLLAPSIBLE BREAKDOWN SUMMARY (CLEAN INLINE ACCORDION) -->
+            <div x-show="showDetails" x-cloak
+                 class="px-5 py-3.5 bg-slate-50/70 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 text-xs">
+                <div class="flex items-center justify-between flex-wrap gap-3 font-mono">
+                    <div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                        <span class="text-slate-400 text-[11px] font-sans">{{ __('messages.morning_float') }}:</span>
+                        <strong class="font-bold">৳{{ number_format($todayRegister->opening_cash, 2) }}</strong>
+                    </div>
+                    <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">+</span>
+                    <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <span class="text-emerald-600/70 dark:text-emerald-400/70 text-[11px] font-sans">{{ __('messages.cash_sales') }}:</span>
+                        <strong class="font-bold">+৳{{ number_format($todayRegister->cash_sales, 2) }}</strong>
+                    </div>
+                    <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">-</span>
+                    <div class="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+                        <span class="text-rose-600/70 dark:text-rose-400/70 text-[11px] font-sans">{{ __('messages.cash_refunds') }}:</span>
+                        <strong class="font-bold">-৳{{ number_format($todayRegister->cash_refunds, 2) }}</strong>
+                    </div>
+                    <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">-</span>
+                    <div class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                        <span class="text-amber-600/70 dark:text-amber-400/70 text-[11px] font-sans">{{ __('messages.cash_expenses') }}:</span>
+                        <strong class="font-bold">-৳{{ number_format($todayRegister->cash_expenses, 2) }}</strong>
+                    </div>
+                    <span class="text-slate-300 dark:text-slate-700 hidden sm:inline">-</span>
+                    <div class="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                        <span class="text-indigo-600/70 dark:text-indigo-400/70 text-[11px] font-sans">{{ __('messages.cash_remitted') }}:</span>
+                        <strong class="font-bold">-৳{{ number_format($todayRegister->cash_transfers, 2) }}</strong>
                     </div>
                 </div>
-
-                <!-- Minimal 5-Part Cash Breakdown Strip -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-mono w-full md:w-auto">
-                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-center">
-                        <span class="text-[10px] text-slate-400 block">{{ __('messages.morning_float') }}</span>
-                        <strong class="text-slate-800 dark:text-slate-200 font-bold">৳{{ number_format($todayRegister->opening_cash, 2) }}</strong>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50 text-center">
-                        <span class="text-[10px] text-emerald-600 dark:text-emerald-400 block">{{ __('messages.cash_sales') }}</span>
-                        <strong class="text-emerald-600 dark:text-emerald-400 font-bold">+৳{{ number_format($todayRegister->cash_sales, 2) }}</strong>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 text-center">
-                        <span class="text-[10px] text-rose-600 dark:text-rose-400 block">{{ __('messages.cash_refunds') }}</span>
-                        <strong class="text-rose-600 dark:text-rose-400 font-bold">-৳{{ number_format($todayRegister->cash_refunds, 2) }}</strong>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 text-center">
-                        <span class="text-[10px] text-amber-600 dark:text-amber-400 block">{{ __('messages.cash_expenses') }}</span>
-                        <strong class="text-amber-600 dark:text-amber-400 font-bold">-৳{{ number_format($todayRegister->cash_expenses, 2) }}</strong>
-                    </div>
-                    <div class="p-2.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-center col-span-2 sm:col-span-1">
-                        <span class="text-[10px] text-indigo-600 dark:text-indigo-400 block">{{ __('messages.cash_remitted') }}</span>
-                        <strong class="text-indigo-600 dark:text-indigo-400 font-bold">-৳{{ number_format($todayRegister->cash_transfers, 2) }}</strong>
-                    </div>
+                <div class="mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{{ __('messages.opened_by') }}: <strong>{{ $todayRegister->opener->name ?? 'Staff' }}</strong> ({{ $todayRegister->opened_at->format('h:i A') }})</span>
+                    <span>স্টোর: <strong>{{ $todayRegister->store->name }}</strong></span>
                 </div>
             </div>
 
-            <!-- INLINE EVENING CLOSE FORM (COLLAPSIBLE / EXPANDABLE) -->
+            <!-- COLLAPSIBLE EVENING CLOSE FORM -->
             @if($todayRegister->isOpen())
                 <div x-show="showClosingForm" x-cloak
-                     class="pt-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 -mx-6 -mb-6 p-6 rounded-b-2xl space-y-3">
+                     class="p-5 border-t border-slate-100 dark:border-slate-800 bg-rose-50/20 dark:bg-rose-950/10 space-y-3">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                            {{ __('messages.close_drawer_btn') }}
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                            <span>🔒</span> {{ __('messages.close_drawer_btn') }}
                         </h3>
                         <button type="button" @click="showClosingForm = false" class="text-xs text-slate-400 hover:text-slate-600">✕ {{ __('messages.cancel') }}</button>
                     </div>
@@ -179,7 +203,7 @@
                 </div>
             @else
                 <!-- REGISTER CLOSED SUMMARY -->
-                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 bg-slate-50/50 dark:bg-slate-800/30">
                     <div>
                         {{ __('messages.actual_counted_cash') }}:
                         <strong class="text-slate-900 dark:text-white font-mono ml-1">৳{{ number_format($todayRegister->closing_cash_counted, 2) }}</strong>
