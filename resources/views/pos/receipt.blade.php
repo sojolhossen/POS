@@ -176,9 +176,15 @@
                     <tr>
                         <td style="font-size: 9.5px; padding-left: 6px;">
                             {{ $it->productVariant->color ?? 'Standard' }}/{{ $it->productVariant->size ?? 'Free' }}
+                            @if($it->discount_amount > 0)
+                                <div style="color: #047857; font-size: 9px; font-weight: bold;">
+                                    * Discount: -৳{{ number_format($it->discount_amount, 2) }}
+                                </div>
+                            @endif
                         </td>
                         <td class="text-right">{{ $it->quantity }}</td>
-                        <td class="text-right bold">{{ number_format($it->line_total ?? ($it->quantity * $it->unit_price - $it->discount_amount), 2) }}</td>
+                        <td class="text-right">৳{{ number_format($it->unit_price, 2) }}</td>
+                        <td class="text-right bold">৳{{ number_format($it->line_total ?? ($it->quantity * $it->unit_price - $it->discount_amount), 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -194,8 +200,13 @@
             </tr>
             @if($sale->discount_amount > 0)
                 <tr>
-                    <td>Promotion / Discount:</td>
-                    <td class="text-right">-৳{{ number_format($sale->discount_amount, 2) }}</td>
+                    <td>
+                        Promotion Discount:
+                        @if($sale->promotion && $sale->promotion->product)
+                            <div style="font-size: 9px; color: #555;">(Applied strictly to: {{ $sale->promotion->product->name }})</div>
+                        @endif
+                    </td>
+                    <td class="text-right bold" style="color: #047857;">-৳{{ number_format($sale->discount_amount, 2) }}</td>
                 </tr>
             @endif
             @if($sale->points_discount > 0)

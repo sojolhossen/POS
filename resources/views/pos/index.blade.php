@@ -127,6 +127,13 @@
                                 <td class="p-3">
                                     <div class="font-bold text-slate-900 dark:text-white" x-text="line.name"></div>
                                     <div class="text-[11px] text-slate-400" x-text="(line.color || 'Standard') + ' / ' + (line.size || 'Free') + ' • ' + line.barcode"></div>
+                                    
+                                    <!-- Dynamic Per-Product Discount Indicator Badge -->
+                                    <div x-show="lineDiscount(line) > 0" class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/60 mt-1">
+                                        <svg class="w-3 h-3 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                        <span>Product Discount: -৳<span x-text="lineDiscount(line).toFixed(2)"></span></span>
+                                    </div>
+
                                     <div x-show="line.quantity > line.available_stock" class="text-[10px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1 mt-0.5">
                                         <svg class="w-3 h-3 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                                         <span>Stock shortage! Only <span x-text="line.available_stock"></span> pcs available</span>
@@ -152,7 +159,13 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="p-3 text-right font-mono font-bold text-slate-900 dark:text-white" x-text="(line.price * line.quantity).toFixed(2)"></td>
+                                <td class="p-3 text-right font-mono">
+                                    <div :class="lineDiscount(line) > 0 ? 'font-black text-emerald-600 dark:text-emerald-400' : 'font-bold text-slate-900 dark:text-white'" 
+                                         x-text="'৳' + lineTotal(line).toFixed(2)"></div>
+                                    <div x-show="lineDiscount(line) > 0" 
+                                         class="text-[10px] text-slate-400 line-through" 
+                                         x-text="'৳' + (line.price * line.quantity).toFixed(2)"></div>
+                                </td>
                                 <td class="p-3 text-center">
                                     <button type="button" @click="removeLine(index)" class="text-rose-500 hover:text-rose-700 p-1">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -335,7 +348,12 @@
                     </div>
 
                     <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-400" x-show="promoDiscount() > 0">
-                        <span>Promotion Discount</span>
+                        <div>
+                            <span>Promotion Discount</span>
+                            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-sans font-bold" x-show="activePromotions.find(p => p.code === selectedPromotion)?.product_name">
+                                Applied strictly to: <span x-text="activePromotions.find(p => p.code === selectedPromotion)?.product_name"></span>
+                            </div>
+                        </div>
                         <span class="font-bold">-৳<span x-text="promoDiscount().toFixed(2)"></span></span>
                     </div>
 
@@ -1003,7 +1021,7 @@ function posApp() {
             }
         },
 
-        promoDiscount() {
+        lineDiscount(line) {
             if (!this.selectedPromotion) return 0;
             const promo = this.activePromotions.find(p => p.code === this.selectedPromotion);
             if (!promo) return 0;
@@ -1017,28 +1035,38 @@ function posApp() {
 
             // Product-specific discount: ONLY discounts the specific product's lines
             if (promo.product_id) {
-                let eligibleSubtotal = 0;
-                this.cart.forEach(item => {
-                    if (Number(item.product_id) === Number(promo.product_id)) {
-                        eligibleSubtotal += (item.price * item.quantity);
-                    }
-                });
-                return Math.round((eligibleSubtotal * (rate / 100)) * 100) / 100;
+                if (Number(line.product_id) !== Number(promo.product_id)) {
+                    return 0;
+                }
+                return Math.round((line.price * line.quantity * (rate / 100)) * 100) / 100;
             }
 
             // Category-specific discount: ONLY discounts that category's lines
             if (promo.category_id) {
-                let eligibleSubtotal = 0;
-                this.cart.forEach(item => {
-                    if (Number(item.category_id) === Number(promo.category_id)) {
-                        eligibleSubtotal += (item.price * item.quantity);
-                    }
-                });
-                return Math.round((eligibleSubtotal * (rate / 100)) * 100) / 100;
+                if (Number(line.category_id) !== Number(promo.category_id)) {
+                    return 0;
+                }
+                return Math.round((line.price * line.quantity * (rate / 100)) * 100) / 100;
             }
 
             // Storewide discount
-            return Math.round((this.subtotal() * (rate / 100)) * 100) / 100;
+            return Math.round((line.price * line.quantity * (rate / 100)) * 100) / 100;
+        },
+
+        lineTotal(line) {
+            return Math.max(0, (line.price * line.quantity) - this.lineDiscount(line));
+        },
+
+        promoDiscount() {
+            if (!this.selectedPromotion) return 0;
+            const promo = this.activePromotions.find(p => p.code === this.selectedPromotion);
+            if (!promo) return 0;
+
+            if (promo.min_spend && this.subtotal() < promo.min_spend) {
+                return 0;
+            }
+
+            return this.cart.reduce((sum, line) => sum + this.lineDiscount(line), 0);
         },
 
         taxableAmount() {

@@ -186,7 +186,7 @@ class PosController extends Controller
      */
     public function receipt(PosSale $sale)
     {
-        $sale->load(['store', 'cashier', 'customer', 'promotion', 'items', 'payments']);
+        $sale->load(['store', 'cashier', 'customer', 'promotion.product', 'items.productVariant.product', 'payments']);
         return view('pos.receipt', compact('sale'));
     }
 
@@ -195,7 +195,7 @@ class PosController extends Controller
      */
     public function reprint(PosSale $sale)
     {
-        $sale->load(['store', 'cashier', 'customer', 'promotion', 'items', 'payments']);
+        $sale->load(['store', 'cashier', 'customer', 'promotion.product', 'items.productVariant.product', 'payments']);
         return view('pos.receipt', ['sale' => $sale, 'isReprint' => true]);
     }
 
