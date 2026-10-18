@@ -104,16 +104,19 @@ class StoreBalanceService
             ];
         }
 
-        // 3. Pending cash transfers awaiting super admin verification / approval
-        $pendingTransfersQuery = StoreCashTransfer::where('status', 'pending');
-        if (!$user->isSuperAdmin() && !empty($storeIds)) {
-            $pendingTransfersQuery->whereIn('store_id', $storeIds);
+        // 3. Pending cash transfers awaiting super admin verification / approval (Super Admin ONLY)
+        if ($user->isSuperAdmin()) {
+            $pendingTransfersQuery = StoreCashTransfer::where('status', 'pending');
+            $pendingTransfersCount = $pendingTransfersQuery->count();
+            $pendingTransfersSum = (float) $pendingTransfersQuery->sum('amount');
+            $latestPendingTransfers = $pendingTransfersCount > 0 
+                ? (clone $pendingTransfersQuery)->with('store', 'transferredBy')->latest()->take(3)->get()
+                : collect();
+        } else {
+            $pendingTransfersCount = 0;
+            $pendingTransfersSum = 0.0;
+            $latestPendingTransfers = collect();
         }
-        $pendingTransfersCount = $pendingTransfersQuery->count();
-        $pendingTransfersSum = (float) $pendingTransfersQuery->sum('amount');
-        $latestPendingTransfers = $pendingTransfersCount > 0 
-            ? (clone $pendingTransfersQuery)->with('store', 'transferredBy')->latest()->take(3)->get()
-            : collect();
 
         return [
             'liveBalance' => $totalLiveBalance,

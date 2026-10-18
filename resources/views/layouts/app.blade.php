@@ -576,9 +576,9 @@
                     <div class="relative" x-data="{ balanceOpen: false }" @click.outside="balanceOpen = false">
                         <button type="button" 
                                 @click="balanceOpen = !balanceOpen"
-                                class="relative flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full {{ !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200' : 'bg-emerald-50 hover:bg-emerald-100/70 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300' }} border transition shadow-2xs cursor-pointer group"
+                                class="relative flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full {{ auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200' : 'bg-emerald-50 hover:bg-emerald-100/70 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300' }} border transition shadow-2xs cursor-pointer group"
                                 title="Click to view store balance & remittances">
-                            @if(!empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0)
+                            @if(auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0)
                                 <span class="relative flex h-2.5 w-2.5">
                                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                                     <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
@@ -587,20 +587,20 @@
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
                             @endif
                             <div class="flex items-center gap-1.5 text-xs font-bold leading-none">
-                                <span class="text-[11px] {{ !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-600/80 dark:text-emerald-400/80' }} font-medium hidden sm:inline">BDT (৳)</span>
-                                <span class="font-mono font-black {{ !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-950 dark:text-amber-100' : 'text-emerald-900 dark:text-emerald-100' }} text-xs sm:text-sm">
+                                <span class="text-[11px] {{ auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-600/80 dark:text-emerald-400/80' }} font-medium hidden sm:inline">BDT (৳)</span>
+                                <span class="font-mono font-black {{ auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-950 dark:text-amber-100' : 'text-emerald-900 dark:text-emerald-100' }} text-xs sm:text-sm">
                                     ৳{{ number_format($headerBalanceData['liveBalance'] ?? 0, 2) }}
                                 </span>
-                                <span class="text-[10px] {{ !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700/80 dark:text-emerald-300/80' }} font-normal hidden lg:inline">
+                                <span class="text-[10px] {{ auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700/80 dark:text-emerald-300/80' }} font-normal hidden lg:inline">
                                     • {{ $headerBalanceData['scopeName'] ?? 'Live Hub' }}
                                 </span>
-                                @if(!empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0)
+                                @if(auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0)
                                     <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
                                         {{ $headerBalanceData['pendingCashTransfersCount'] }} New Cash
                                     </span>
                                 @endif
                             </div>
-                            <svg class="w-3 h-3 {{ !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-600' : 'text-emerald-500' }} group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-3 h-3 {{ auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0 ? 'text-amber-600' : 'text-emerald-500' }} group-hover:translate-y-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
 
                         <!-- Popover Breakdown for Store Balances -->
@@ -626,8 +626,8 @@
                                 </span>
                             </div>
 
-                            <!-- PENDING CASH TRANSFERS ALERT POPUP STRIP (IF CASH SENT TO OWNER) -->
-                            @if(!empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0)
+                            <!-- PENDING CASH TRANSFERS ALERT POPUP STRIP (SUPER ADMIN ONLY) -->
+                            @if(auth()->user()->isSuperAdmin() && !empty($headerBalanceData['pendingCashTransfersCount']) && $headerBalanceData['pendingCashTransfersCount'] > 0)
                                 <div class="my-2.5 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800">
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="flex items-center gap-2">
