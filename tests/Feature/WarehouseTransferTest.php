@@ -203,4 +203,84 @@ class WarehouseTransferTest extends TestCase
             $this->warehouseStaff
         );
     }
+
+    public function test_manager_transfer_creation_scopes_destination_to_assigned_stores_and_source_to_warehouse(): void
+    {
+        $unassignedOutlet = Store::create([
+            'name' => 'Gulshan Unassigned Outlet',
+            'code' => 'GLS-01',
+            'is_warehouse' => false,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->storeManager);
+
+        $response = $this->get(route('transfers.create'));
+        $response->assertStatus(200);
+
+        // Destination stores should contain the manager's assigned store, but NOT the unassigned store
+        $destinationStores = $response->viewData('destinationStores');
+        $this->assertTrue($destinationStores->contains('id', $this->outletStore->id));
+        $this->assertFalse($destinationStores->contains('id', $unassignedOutlet->id));
+
+        // Source stores should strictly contain warehouses
+        $sourceStores = $response->viewData('sourceStores');
+        $this->assertTrue($sourceStores->contains('id', $this->warehouse->id));
+        $this->assertFalse($sourceStores->contains('id', $this->outletStore->id));
+        $this->assertFalse($sourceStores->contains('id', $unassignedOutlet->id));
+    }
+
+    public function test_super_admin_can_modify_source_store_and_quantities_at_approval(): void
+    {
+        $secondaryWarehouse = Store::create([
+            'name' => 'Chittagong Regional Hub',
+            'code' => 'CTG-01',
+            'is_warehouse' => true,
+            'is_active' => true,
+        ]);
+
+        /** @var TransferService $transferService */
+        $transferService = app(TransferService::class);
+        $transfer = $transferService->requestTransfer(
+            $this->warehouse,
+            $this->outletStore,
+            [['product_variant_id' => $this->variant->id, 'quantity' => 50]],
+            $this->storeManager
+        );
+
+        $item = $transfer->items->first();
+
+        // 1. Non-admin cannot modify
+        $this->actingAs($this->storeManager);
+        $unauthResp = $this->post(route('transfers.modify', $transfer), [
+            'source_store_id' => $secondaryWarehouse->id,
+            'quantities' => [$item->id => 25],
+        ]);
+        $unauthResp->assertStatus(403);
+
+        // 2. Super admin can update source store and quantities
+        $this->actingAs($this->superAdmin);
+        $modifyResp = $this->post(route('transfers.modify', $transfer), [
+            'source_store_id' => $secondaryWarehouse->id,
+            'quantities' => [$item->id => 30],
+        ]);
+        $modifyResp->assertRedirect(route('transfers.show', $transfer));
+
+        $transfer->refresh();
+        $this->assertEquals($secondaryWarehouse->id, $transfer->source_store_id);
+        $this->assertEquals(30, $transfer->items()->where('id', $item->id)->first()->quantity_requested);
+
+        // 3. Super admin can approve and modify atomically in one request
+        $approveResp = $this->post(route('transfers.approve', $transfer), [
+            'source_store_id' => $this->warehouse->id,
+            'quantities' => [$item->id => 20],
+        ]);
+        $approveResp->assertRedirect(route('transfers.show', $transfer));
+
+        $transfer->refresh();
+        $this->assertEquals('approved', $transfer->status);
+        $this->assertEquals($this->warehouse->id, $transfer->source_store_id);
+        $this->assertEquals(20, $transfer->items()->where('id', $item->id)->first()->quantity_requested);
+    }
 }
+

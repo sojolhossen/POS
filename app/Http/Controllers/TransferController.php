@@ -38,15 +38,47 @@ class TransferController extends Controller
         return view('transfers.index', compact('transfers', 'stores'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $stores = Store::active()->get();
+        $user = $request->user();
+
+        // 1. Supplying Location (Source):
+        // As requested: "Source Store (Supplying Location) * a shudhu wearhous show korbe"
+        $sourceStores = Store::active()->warehouseOnly()->get();
+        if ($sourceStores->isEmpty()) {
+            $sourceStores = Store::active()->orderBy('is_warehouse', 'desc')->orderBy('name')->get();
+        }
+
+        // 2. Receiving Location (Destination):
+        // As requested: "Destination Store (Receiving Location) * shudu take as sing kora store gula dekhabe"
+        if ($user->isStoreManager()) {
+            $destinationStores = Store::active()->where(function ($q) use ($user) {
+                $q->where('manager_id', $user->id);
+                if ($user->store_id) {
+                    $q->orWhere('id', $user->store_id);
+                }
+            })->get();
+        } elseif ($user->isSuperAdmin()) {
+            $destinationStores = Store::active()->retailOnly()->get();
+            if ($destinationStores->isEmpty()) {
+                $destinationStores = Store::active()->get();
+            }
+        } elseif ($user->store_id) {
+            $destinationStores = Store::active()->where('id', $user->store_id)->get();
+        } else {
+            $destinationStores = Store::active()->get();
+        }
+
+        $stores = $destinationStores; // backward compatibility
         $variants = ProductVariant::with('product')->where('is_active', true)->get();
-        return view('transfers.create', compact('stores', 'variants'));
+
+        return view('transfers.create', compact('sourceStores', 'destinationStores', 'stores', 'variants'));
     }
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $validated = $request->validate([
             'source_store_id' => 'required|exists:stores,id',
             'destination_store_id' => 'required|exists:stores,id|different:source_store_id',
@@ -56,6 +88,11 @@ class TransferController extends Controller
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
+        // Enforce store manager receiving location scoping
+        if ($user->isStoreManager() && !$user->canAccessStore((int) $validated['destination_store_id'])) {
+            return back()->withInput()->with('error', 'Unauthorized! You can only request stock for stores assigned to you.');
+        }
+
         try {
             $source = Store::findOrFail($validated['source_store_id']);
             $dest = Store::findOrFail($validated['destination_store_id']);
@@ -64,7 +101,7 @@ class TransferController extends Controller
                 $source,
                 $dest,
                 $validated['items'],
-                auth()->user(),
+                $user,
                 $validated['notes'] ?? null
             );
 
@@ -87,7 +124,30 @@ class TransferController extends Controller
             'receiver',
             'auditLogs.user'
         ]);
-        return view('transfers.show', compact('transfer'));
+
+        // Source Store current live stock for each requested variant
+        $sourceStocks = \App\Models\StockBalance::where('store_id', $transfer->source_store_id)
+            ->whereIn('product_variant_id', $transfer->items->pluck('product_variant_id'))
+            ->get()
+            ->keyBy('product_variant_id');
+
+        // All active stores for Super Admin in case Supplying Location needs to be changed
+        $allStores = auth()->user()?->isSuperAdmin()
+            ? Store::active()->orderBy('is_warehouse', 'desc')->orderBy('name')->get()
+            : collect();
+
+        // Check if there is any stock shortage at the source store
+        $hasStockDeficit = false;
+        foreach ($transfer->items as $item) {
+            $stock = $sourceStocks[$item->product_variant_id] ?? null;
+            $avail = $stock ? $stock->available_quantity : 0;
+            if ($avail < $item->quantity_requested) {
+                $hasStockDeficit = true;
+                break;
+            }
+        }
+
+        return view('transfers.show', compact('transfer', 'sourceStocks', 'allStores', 'hasStockDeficit'));
     }
 
     public function printChallan(Request $request, StockTransfer $transfer)
@@ -114,16 +174,59 @@ class TransferController extends Controller
         return view('transfers.print', compact('transfer', 'copy'));
     }
 
-    public function approve(StockTransfer $transfer)
+    public function approve(Request $request, StockTransfer $transfer)
     {
         // STRICT: Only Super Admin can approve stock transfers
         if (!auth()->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized! Only Super Admin can approve stock transfers.');
         }
 
+        $validated = $request->validate([
+            'source_store_id' => 'nullable|exists:stores,id',
+            'quantities' => 'nullable|array',
+            'quantities.*' => 'nullable|integer|min:1',
+        ]);
+
         try {
-            $this->transferService->approveTransfer($transfer, auth()->user());
-            return redirect()->route('transfers.show', $transfer)->with('success', "Transfer {$transfer->reference_number} approved by Super Admin. Stock is authorized for dispatch.");
+            $newSourceId = !empty($validated['source_store_id']) ? (int) $validated['source_store_id'] : null;
+            $updatedQuantities = $validated['quantities'] ?? [];
+
+            $this->transferService->approveTransfer($transfer, auth()->user(), $newSourceId, $updatedQuantities);
+
+            return redirect()->route('transfers.show', $transfer)
+                ->with('success', "Transfer {$transfer->reference_number} approved by Super Admin. Stock is authorized for dispatch.");
+        } catch (Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function updateSourceAndItems(Request $request, StockTransfer $transfer)
+    {
+        // STRICT: Only Super Admin can modify transfer source and quantities
+        if (!auth()->user()->isSuperAdmin()) {
+            abort(403, 'Unauthorized! Only Super Admin can modify supplying source and quantities.');
+        }
+
+        $validated = $request->validate([
+            'source_store_id' => 'required|exists:stores,id',
+            'quantities' => 'required|array',
+            'quantities.*' => 'required|integer|min:1',
+        ]);
+
+        if ((int) $validated['source_store_id'] === (int) $transfer->destination_store_id) {
+            return back()->with('error', 'Supplying location cannot be the same as receiving location.');
+        }
+
+        try {
+            $this->transferService->modifyTransferSourceAndItems(
+                $transfer,
+                auth()->user(),
+                (int) $validated['source_store_id'],
+                $validated['quantities']
+            );
+
+            return redirect()->route('transfers.show', $transfer)
+                ->with('success', "Supplying source and requested quantities updated successfully by Super Admin.");
         } catch (Exception $e) {
             return back()->with('error', $e->getMessage());
         }

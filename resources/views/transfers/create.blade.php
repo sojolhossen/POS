@@ -37,28 +37,48 @@
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Source Store (Supplying Location) <span class="text-rose-500">*</span>
                     </label>
-                    <select name="source_store_id" required class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2">
-                        <option value="">Select Source Location</option>
-                        @foreach($stores as $store)
-                            <option value="{{ $store->id }}" {{ old('source_store_id') == $store->id ? 'selected' : '' }}>
-                                {{ $store->name }} ({{ $store->code }}) {{ $store->is_warehouse ? '[Warehouse]' : '' }}
+                    <select name="source_store_id" required class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 font-medium focus:ring-2 focus:ring-indigo-500">
+                        @if($sourceStores->count() > 1)
+                            <option value="">Select Warehouse / Supplying Location</option>
+                        @endif
+                        @forelse($sourceStores as $store)
+                            <option value="{{ $store->id }}" {{ (old('source_store_id') == $store->id || $sourceStores->count() === 1) ? 'selected' : '' }}>
+                                {{ $store->name }} ({{ $store->code }}) {{ $store->is_warehouse ? '— [Central Warehouse]' : '' }}
                             </option>
-                        @endforeach
+                        @empty
+                            <option value="">No warehouse facility found</option>
+                        @endforelse
                     </select>
+                    <p class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        <span>Supplying source is strictly Central Warehouse. (Super Admin can re-route if stock is unavailable).</span>
+                    </p>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Destination Store (Receiving Location) <span class="text-rose-500">*</span>
                     </label>
-                    <select name="destination_store_id" required class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2">
-                        <option value="">Select Destination Store</option>
-                        @foreach($stores as $store)
-                            <option value="{{ $store->id }}" {{ (old('destination_store_id', auth()->user()->store_id) == $store->id) ? 'selected' : '' }}>
+                    <select name="destination_store_id" required class="w-full text-xs rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 font-medium focus:ring-2 focus:ring-indigo-500">
+                        @if($destinationStores->count() > 1)
+                            <option value="">Select Assigned Destination Store</option>
+                        @endif
+                        @forelse($destinationStores as $store)
+                            <option value="{{ $store->id }}" {{ (old('destination_store_id', auth()->user()->store_id) == $store->id || $destinationStores->count() === 1) ? 'selected' : '' }}>
                                 {{ $store->name }} ({{ $store->code }})
                             </option>
-                        @endforeach
+                        @empty
+                            <option value="">No assigned store found</option>
+                        @endforelse
                     </select>
+                    @if($destinationStores->isEmpty())
+                        <p class="text-[11px] text-rose-500 font-semibold mt-1">⚠️ No store is currently assigned to your account. Please contact Super Admin.</p>
+                    @else
+                        <p class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span>Only retail stores assigned to your manager profile are listed.</span>
+                        </p>
+                    @endif
                 </div>
             </div>
 

@@ -127,13 +127,10 @@
             <!-- Approve Button (Top Action Bar) -->
             @if($transfer->status === 'requested')
                 @if(auth()->user()?->isSuperAdmin())
-                    <form method="POST" action="{{ route('transfers.approve', $transfer) }}" onsubmit="return confirm('Authorize this transfer for dispatch? Only Super Admin has this authority.');" class="inline-block m-0">
-                        @csrf
-                        <button type="submit" class="px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md shadow-blue-600/30 transition flex items-center gap-1.5 cursor-pointer hover:opacity-95" style="background: #2563eb !important; color: #ffffff !important;">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                            <span>Approve Transfer (Super Admin)</span>
-                        </button>
-                    </form>
+                    <button type="submit" form="adminTransferForm" onclick="return confirm('Authorize this transfer for dispatch? Only Super Admin has this authority.');" class="px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md shadow-blue-600/30 transition flex items-center gap-1.5 cursor-pointer hover:opacity-95" style="background: #2563eb !important; color: #ffffff !important;">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <span>Approve Transfer (Super Admin)</span>
+                    </button>
                 @else
                     <div class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-xs font-semibold shadow-xs">
                         <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -165,28 +162,70 @@
         </div>
     </div>
 
-    <!-- Prominent Super Admin Approval Hero Banner (When Awaiting Approval) -->
+    <!-- Prominent Super Admin Approval & Stock Review Console (When Awaiting Approval) -->
     @if($transfer->status === 'requested')
         @if(auth()->user()?->isSuperAdmin())
-            <div class="rounded-2xl p-5 border border-blue-200 dark:border-blue-800 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4" style="background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%); color: #ffffff;">
-                <div class="flex items-center gap-3.5">
-                    <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center font-bold text-xl shrink-0 shadow-inner">
-                        ⚡
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">Super Admin Action</span>
-                            <h3 class="text-base font-extrabold text-white">Transfer Authorization Required</h3>
+            <div class="rounded-2xl p-6 border border-blue-200 dark:border-blue-800 shadow-lg space-y-5" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%); color: #ffffff;">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center font-bold text-2xl shrink-0 shadow-inner">
+                            🛡️
                         </div>
-                        <p class="text-xs text-blue-100 mt-1">This transfer requisition has been placed by <strong>{{ $transfer->creator->name ?? 'Staff' }}</strong>. As Super Admin, click the button to officially approve this movement for warehouse dispatch.</p>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-900 shadow-xs">Super Admin Authority Only</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-white/20 text-white">Stock & Source Review</span>
+                            </div>
+                            <h3 class="text-base font-extrabold text-white mt-1">Stock Transfer Verification & Approval Console</h3>
+                            <p class="text-xs text-blue-100">Review warehouse inventory availability. If Central Warehouse lacks stock, you can change the Supplying Location or modify requested quantities below.</p>
+                        </div>
                     </div>
                 </div>
-                <form method="POST" action="{{ route('transfers.approve', $transfer) }}" onsubmit="return confirm('Authorize this stock transfer for warehouse dispatch?');" class="shrink-0">
+
+                @if($hasStockDeficit)
+                    <div class="p-3.5 rounded-xl bg-rose-500/20 border border-rose-400/40 text-rose-100 text-xs flex items-center gap-3">
+                        <span class="text-xl shrink-0">⚠️</span>
+                        <div>
+                            <strong class="font-bold text-white text-sm">Warehouse Stock Shortage Detected:</strong>
+                            <div class="mt-0.5">One or more requested garment variants exceed available stock at <strong>{{ $transfer->sourceStore->name }}</strong>. As Super Admin, you can change the Supplying Location below to another branch/warehouse or reduce the requested quantities before approving.</div>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs flex items-center gap-2">
+                        <span class="text-base font-bold">✓</span>
+                        <span><strong>Stock Verified:</strong> Sufficient stock is currently available at <strong>{{ $transfer->sourceStore->name }}</strong> for all requested garment items.</span>
+                    </div>
+                @endif
+
+                <form id="adminTransferForm" method="POST" action="{{ route('transfers.approve', $transfer) }}" class="space-y-4">
                     @csrf
-                    <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95" style="background: #ffffff !important; color: #1e3a8a !important;">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                        <span>✓ Approve & Authorize Transfer Now</span>
-                    </button>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end bg-white/5 p-4 rounded-xl border border-white/10">
+                        <div class="lg:col-span-7">
+                            <label class="block text-xs font-bold text-white mb-1.5 flex items-center gap-1.5">
+                                <span>Source Store (Supplying Location)</span>
+                                <span class="text-[10px] bg-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold">Only Super Admin Can Change</span>
+                            </label>
+                            <select name="source_store_id" class="w-full text-xs rounded-xl bg-slate-900/90 text-white border border-white/20 px-3.5 py-2.5 font-medium focus:ring-2 focus:ring-white">
+                                @foreach($allStores as $st)
+                                    <option value="{{ $st->id }}" {{ (old('source_store_id', $transfer->source_store_id) == $st->id) ? 'selected' : '' }} class="bg-slate-900 text-white">
+                                        {{ $st->name }} ({{ $st->code }}) {{ $st->is_warehouse ? '— [Central Warehouse]' : '— [Retail Store Branch]' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="text-[11px] text-blue-200 mt-1">Change to another warehouse or retail branch if current location has insufficient stock.</p>
+                        </div>
+
+                        <div class="lg:col-span-5 flex items-center justify-end gap-2.5 pt-2">
+                            <button type="submit" formaction="{{ route('transfers.modify', $transfer) }}" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition cursor-pointer flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                <span>Save Changes Only</span>
+                            </button>
+                            <button type="submit" onclick="return confirm('Authorize and approve this transfer with the configured supplying store and quantities?');" class="px-5 py-2.5 rounded-xl font-black text-xs shadow-lg transition flex items-center gap-2 cursor-pointer hover:bg-slate-100 active:scale-95 bg-white text-blue-900">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                <span>✓ Authorize & Approve</span>
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
         @else
@@ -196,7 +235,7 @@
                 </div>
                 <div>
                     <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">Awaiting Super Admin Approval (অনুমোদনের অপেক্ষায়)</h4>
-                    <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">This requisition has been placed and is currently awaiting approval from the Super Administrator. Once approved, the source warehouse will dispatch the goods.</p>
+                    <p class="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">This requisition has been placed and is currently awaiting approval from the Super Administrator. Only Super Admin has authority to re-route source stock or modify requested quantities.</p>
                 </div>
             </div>
         @endif
@@ -336,7 +375,16 @@
                         <th class="py-3 px-4 w-12 text-center">#</th>
                         <th class="py-3 px-4">Garment / Product Description</th>
                         <th class="py-3 px-4 font-mono">SKU / Barcode</th>
-                        <th class="py-3 px-4 text-right">Requested</th>
+                        <th class="py-3 px-4 text-center">
+                            <div>Source Live Stock</div>
+                            <div class="text-[10px] font-normal text-slate-400">({{ $transfer->sourceStore->name }})</div>
+                        </th>
+                        <th class="py-3 px-4 text-right">
+                            <div>Requested Qty</div>
+                            @if($transfer->status === 'requested' && auth()->user()?->isSuperAdmin())
+                                <div class="text-[9px] font-semibold text-blue-600 dark:text-blue-400 uppercase">Editable by Admin</div>
+                            @endif
+                        </th>
                         <th class="py-3 px-4 text-right">Dispatched</th>
                         <th class="py-3 px-4 text-right text-emerald-600 dark:text-emerald-400">Confirmed Rec.</th>
                         <th class="py-3 px-4 text-right text-rose-600 dark:text-rose-400">Discrepancy</th>
@@ -344,7 +392,13 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     @foreach($transfer->items as $idx => $it)
-                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
+                        @php
+                            $stock = $sourceStocks[$it->product_variant_id] ?? ['on_hand' => 0, 'available' => 0];
+                            $avail = (int) ($stock['available'] ?? 0);
+                            $onHand = (int) ($stock['on_hand'] ?? 0);
+                            $isShort = ($transfer->status === 'requested') && ($avail < $it->quantity_requested);
+                        @endphp
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition {{ $isShort ? 'bg-rose-50/20 dark:bg-rose-950/20' : '' }}">
                             <td class="py-3 px-4 text-center font-mono text-slate-400 font-medium">{{ $idx + 1 }}</td>
                             <td class="py-3 px-4">
                                 <div class="font-bold text-slate-900 dark:text-white text-sm">
@@ -369,11 +423,50 @@
                                     <div class="text-[10px] text-slate-400">{{ $it->productVariant->barcode }}</div>
                                 @endif
                             </td>
-                            <td class="py-3 px-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">
-                                <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs">
-                                    {{ $it->quantity_requested }} pcs
-                                </span>
+
+                            <!-- Live Warehouse / Source Stock -->
+                            <td class="py-3 px-4 text-center">
+                                <div class="inline-flex flex-col items-center gap-0.5">
+                                    <span class="font-mono text-xs font-bold {{ $isShort ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                        {{ $avail }} pcs avail
+                                    </span>
+                                    <span class="text-[10px] text-slate-400">
+                                        ({{ $onHand }} on hand)
+                                    </span>
+                                    @if($isShort)
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                            ⚠️ Short: {{ $it->quantity_requested - $avail }} pcs
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                            ✓ In Stock
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
+
+                            <!-- Requested Quantity (Editable ONLY for Super Admin before approval) -->
+                            <td class="py-3 px-4 text-right font-mono font-bold">
+                                @if($transfer->status === 'requested' && auth()->user()?->isSuperAdmin())
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <input type="number" form="adminTransferForm" name="quantities[{{ $it->id }}]" value="{{ old('quantities.'.$it->id, $it->quantity_requested) }}" min="1" required
+                                               class="w-20 text-center text-xs font-mono font-bold rounded-lg border-2 border-blue-400 dark:border-blue-600 bg-white dark:bg-slate-900 text-blue-900 dark:text-blue-100 py-1 px-1.5 focus:ring-2 focus:ring-blue-500 shadow-xs">
+                                        <span class="text-[10px] text-slate-400">pcs</span>
+                                    </div>
+                                    <div class="text-[9px] text-blue-600 dark:text-blue-400 font-sans mt-0.5 font-normal">Super Admin Can Edit</div>
+                                @else
+                                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs text-slate-700 dark:text-slate-300">
+                                        {{ $it->quantity_requested }} pcs
+                                    </span>
+                                    @if($transfer->status === 'requested')
+                                        <div class="text-[9px] text-slate-400 font-sans mt-0.5 flex items-center justify-end gap-0.5">
+                                            <svg class="w-2.5 h-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            <span>Locked</span>
+                                        </div>
+                                    @endif
+                                @endif
+                            </td>
+
                             <td class="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
                                 <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">
                                     {{ $it->quantity_dispatched }} pcs
@@ -399,7 +492,7 @@
                 <!-- Summary Totals Footer -->
                 <tfoot class="bg-slate-50/90 dark:bg-slate-800/80 font-bold border-t-2 border-slate-200 dark:border-slate-700">
                     <tr>
-                        <td colspan="3" class="py-3 px-4 text-right text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                        <td colspan="4" class="py-3 px-4 text-right text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[11px]">
                             Total Sum:
                         </td>
                         <td class="py-3 px-4 text-right font-mono text-slate-800 dark:text-slate-200 text-xs">

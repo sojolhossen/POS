@@ -198,10 +198,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/transfers/{transfer}', [TransferController::class, 'show'])->name('transfers.show');
     Route::get('/transfers/{transfer}/print', [TransferController::class, 'printChallan'])->name('transfers.print');
 
-    // Super Admin Stock Transfer Approval ONLY
+    // Super Admin Stock Transfer Approval & Allocation Modification ONLY
     Route::post('/transfers/{transfer}/approve', [TransferController::class, 'approve'])
         ->middleware('role:super_admin')
         ->name('transfers.approve');
+    Route::post('/transfers/{transfer}/modify', [TransferController::class, 'updateSourceAndItems'])
+        ->middleware('role:super_admin')
+        ->name('transfers.modify');
 
     Route::get('/transfers/{transfer}/dispatch', [TransferController::class, 'dispatchView'])
         ->middleware('role:super_admin,store_manager,warehouse_staff')

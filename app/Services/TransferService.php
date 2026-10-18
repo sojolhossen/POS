@@ -69,10 +69,87 @@ class TransferService
     }
 
     /**
+     * Super Admin modifies the source store and/or requested quantities for a pending transfer.
+     */
+    public function modifyTransferSourceAndItems(
+        StockTransfer $transfer,
+        User $user,
+        ?int $newSourceStoreId = null,
+        array $updatedQuantities = []
+    ): StockTransfer {
+        if (!$user->isSuperAdmin()) {
+            throw new Exception("Unauthorized! Only Super Admin can modify transfer source and quantities.");
+        }
+
+        if (!in_array($transfer->status, ['draft', 'requested'])) {
+            throw new Exception("Transfer {$transfer->reference_number} cannot be modified in status {$transfer->status}.");
+        }
+
+        return DB::transaction(function () use ($transfer, $user, $newSourceStoreId, $updatedQuantities) {
+            $sourceChanged = false;
+            $oldSourceId = $transfer->source_store_id;
+
+            if ($newSourceStoreId && $newSourceStoreId !== $oldSourceId) {
+                if ($newSourceStoreId === (int) $transfer->destination_store_id) {
+                    throw new Exception("Source and destination stores cannot be the same location.");
+                }
+
+                $oldSource = Store::find($oldSourceId);
+                $newSource = Store::findOrFail($newSourceStoreId);
+
+                $transfer->update(['source_store_id' => $newSourceStoreId]);
+                $sourceChanged = true;
+            }
+
+            $quantityChanges = [];
+            foreach ($updatedQuantities as $itemId => $newQty) {
+                $newQty = (int) $newQty;
+                if ($newQty < 1) {
+                    continue;
+                }
+
+                $item = StockTransferItem::where('id', $itemId)
+                    ->where('stock_transfer_id', $transfer->id)
+                    ->first();
+
+                if ($item && (int) $item->quantity_requested !== $newQty) {
+                    $oldQty = $item->quantity_requested;
+                    $item->update(['quantity_requested' => $newQty]);
+                    $quantityChanges[] = "Item #{$item->id} ({$item->productVariant?->sku}): {$oldQty} -> {$newQty} pcs";
+                }
+            }
+
+            $reasonParts = [];
+            if ($sourceChanged && isset($newSource)) {
+                $reasonParts[] = "Supplying source changed to {$newSource->name} ({$newSource->code})";
+            }
+            if (!empty($quantityChanges)) {
+                $reasonParts[] = "Requested quantities adjusted: " . implode(', ', $quantityChanges);
+            }
+
+            if (!empty($reasonParts)) {
+                AuditService::log(
+                    action: 'transfer.modified_by_admin',
+                    auditable: $transfer,
+                    oldValues: ['source_store_id' => $oldSourceId],
+                    newValues: ['source_store_id' => $transfer->source_store_id, 'adjustments' => $quantityChanges],
+                    reason: implode('; ', $reasonParts) . " by Super Admin ({$user->name})"
+                );
+            }
+
+            return $transfer;
+        });
+    }
+
+    /**
      * Authorize / Approve a transfer request.
      */
-    public function approveTransfer(StockTransfer $transfer, User $user): StockTransfer
-    {
+    public function approveTransfer(
+        StockTransfer $transfer,
+        User $user,
+        ?int $newSourceStoreId = null,
+        array $updatedQuantities = []
+    ): StockTransfer {
         if (!$user->isSuperAdmin()) {
             throw new Exception("Unauthorized! Only Super Admin can approve stock transfers.");
         }
@@ -81,7 +158,12 @@ class TransferService
             throw new Exception("Transfer {$transfer->reference_number} cannot be approved in status {$transfer->status}.");
         }
 
-        return DB::transaction(function () use ($transfer, $user) {
+        return DB::transaction(function () use ($transfer, $user, $newSourceStoreId, $updatedQuantities) {
+            // Apply source or quantity modifications if provided by Super Admin
+            if ($newSourceStoreId || !empty($updatedQuantities)) {
+                $this->modifyTransferSourceAndItems($transfer, $user, $newSourceStoreId, $updatedQuantities);
+            }
+
             $oldStatus = $transfer->status;
             $transfer->update([
                 'status' => 'approved',
