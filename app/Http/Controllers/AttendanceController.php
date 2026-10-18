@@ -19,22 +19,42 @@ class AttendanceController extends Controller
         $user = auth()->user();
         $date = $request->input('date', now()->format('Y-m-d'));
 
-        $storeId = ($user->isStoreManager() && $user->store_id)
-            ? $user->store_id
-            : ($request->input('store_id') ?: Store::first()?->id);
+        if ($user->isSuperAdmin() || $user->isAccountant()) {
+            $stores = Store::where('is_active', true)->orderBy('name')->get();
+            $storeId = $request->input('store_id') ?: ($stores->first()?->id);
+        } elseif ($user->isStoreManager()) {
+            $stores = Store::where('is_active', true)
+                ->where(function ($q) use ($user) {
+                    $q->where('manager_id', $user->id);
+                    if ($user->store_id) {
+                        $q->orWhere('id', $user->store_id);
+                    }
+                })->orderBy('name')->get();
+            $storeId = $request->input('store_id');
+            if (!$storeId || !$stores->contains('id', (int) $storeId)) {
+                $storeId = $stores->first()?->id ?: $user->store_id;
+            }
+        } else {
+            $stores = $user->store_id ? Store::where('id', $user->store_id)->get() : collect();
+            $storeId = $user->store_id;
+        }
 
-        $store = Store::find($storeId);
+        $storeId = $storeId ? (int) $storeId : null;
+        $store = $storeId ? Store::find($storeId) : null;
 
         $employees = Employee::where('employment_status', 'active')
             ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->with(['attendances' => fn ($q) => $q->where('date', $date)])
             ->get();
 
-        $stores = ($user->isStoreManager() && $user->store_id)
-            ? Store::where('id', $user->store_id)->get()
-            : Store::where('is_active', true)->get();
+        $attendances = Attendance::with(['employee', 'recorder', 'store'])
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->when($date, fn ($q) => $q->where('date', $date))
+            ->latest('id')
+            ->paginate(25)
+            ->withQueryString();
 
-        return view('attendance.index', compact('employees', 'date', 'store', 'stores'));
+        return view('attendance.index', compact('employees', 'attendances', 'date', 'store', 'storeId', 'stores'));
     }
 
     public function store(Request $request)
@@ -57,8 +77,8 @@ class AttendanceController extends Controller
             ]);
 
             $store = Store::findOrFail($validated['store_id']);
-            if ($user->isStoreManager() && $user->store_id && $store->id != $user->store_id) {
-                abort(403, "You can only record attendance for your own store.");
+            if (!$user->canAccessStore($store->id)) {
+                abort(403, "You can only record attendance for your authorized store.");
             }
 
             $date = $validated['attendance_date'] ?? $validated['date'] ?? now()->toDateString();
@@ -93,8 +113,8 @@ class AttendanceController extends Controller
 
         $store = Store::findOrFail($validated['store_id']);
 
-        if ($user->isStoreManager() && $user->store_id && $store->id != $user->store_id) {
-            abort(403, "You can only record attendance for your own store.");
+        if (!$user->canAccessStore($store->id)) {
+            abort(403, "You can only record attendance for your authorized store.");
         }
 
         foreach ($validated['attendances'] as $att) {

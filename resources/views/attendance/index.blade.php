@@ -11,7 +11,7 @@
         </div>
         <div class="flex items-center gap-3">
             <form method="GET" action="{{ route('attendance.index') }}" class="flex items-center gap-2">
-                @if(in_array(auth()->user()->role, ['super_admin', 'accountant']))
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->isAccountant() || $stores->count() > 1)
                     <select name="store_id" onchange="this.form.submit()" class="rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-200">
                         @foreach($stores as $st)
                             <option value="{{ $st->id }}" {{ $storeId == $st->id ? 'selected' : '' }}>{{ $st->name }}</option>
@@ -30,7 +30,7 @@
     @endif
 
     <!-- Attendance Logging Card -->
-    @if(in_array(auth()->user()->role, ['super_admin', 'store_manager']))
+    @if(auth()->user()->isSuperAdmin() || auth()->user()->isStoreManager())
         <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
             <h2 class="text-base font-bold text-slate-900 dark:text-white">Record Daily Attendance ({{ \Carbon\Carbon::parse($date)->format('d M, Y') }})</h2>
             <form action="{{ route('attendance.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
@@ -131,7 +131,7 @@
                 </tbody>
             </table>
         </div>
-        @if($attendances->hasPages())
+        @if(method_exists($attendances, 'hasPages') && $attendances->hasPages())
             <div class="p-4 border-t border-slate-200 dark:border-slate-800">
                 {{ $attendances->links() }}
             </div>

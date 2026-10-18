@@ -40,4 +40,24 @@ class Attendance extends Model
     {
         return $this->belongsTo(User::class, 'recorded_by');
     }
+
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function getAttendanceDateAttribute()
+    {
+        return $this->date ? $this->date->format('Y-m-d') : null;
+    }
+
+    public function getCheckInAttribute()
+    {
+        return $this->in_time;
+    }
+
+    public function getCheckOutAttribute()
+    {
+        return $this->out_time;
+    }
 }

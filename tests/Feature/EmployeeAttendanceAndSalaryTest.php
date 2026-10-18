@@ -181,4 +181,15 @@ class EmployeeAttendanceAndSalaryTest extends TestCase
 
         $duplicate->assertSessionHasErrors();
     }
+
+    public function test_attendance_index_page_loads_with_attendances_and_pagination(): void
+    {
+        $this->actingAs($this->superAdmin);
+
+        $response = $this->get(route('attendance.index'));
+        $response->assertStatus(200);
+        $response->assertViewHas('attendances');
+        $response->assertViewHas('storeId');
+        $response->assertSee('Store Staff Attendance');
+    }
 }
