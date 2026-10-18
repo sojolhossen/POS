@@ -171,10 +171,136 @@ class StoreController extends Controller
         }
 
         $store->load(['manager', 'staff']);
-        $stockBalances = $store->stockBalances()
-            ->with(['variant.product'])
-            ->paginate(15);
 
-        return view('stores.show', compact('store', 'stockBalances'));
+        // 1. Stock Balances with Search & Filters
+        $search = trim($request->input('search', ''));
+        $stockStatus = $request->input('stock_status', 'all');
+
+        $stockQuery = $store->stockBalances()
+            ->with(['variant.product.category']);
+
+        if ($search !== '') {
+            $stockQuery->whereHas('variant', function ($vQ) use ($search) {
+                $vQ->where('barcode', 'LIKE', "%{$search}%")
+                    ->orWhere('size', 'LIKE', "%{$search}%")
+                    ->orWhere('color', 'LIKE', "%{$search}%")
+                    ->orWhereHas('product', function ($pQ) use ($search) {
+                        $pQ->where('name', 'LIKE', "%{$search}%")
+                            ->orWhere('sku', 'LIKE', "%{$search}%")
+                            ->orWhere('brand', 'LIKE', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($stockStatus === 'in_stock') {
+            $stockQuery->where('quantity_on_hand', '>', 5);
+        } elseif ($stockStatus === 'low_stock') {
+            $stockQuery->where('quantity_on_hand', '>', 0)
+                ->where('quantity_on_hand', '<=', 5);
+        } elseif ($stockStatus === 'out_of_stock') {
+            $stockQuery->where('quantity_on_hand', '<=', 0);
+        }
+
+        $stockBalances = $stockQuery->orderBy('quantity_on_hand', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        // 2. High-level Inventory KPI Aggregates for this store
+        $allBalances = $store->stockBalances()->with('variant.product')->get();
+        $totalSkus = $allBalances->count();
+        $totalUnitsOnHand = (int) $allBalances->sum('quantity_on_hand');
+        $totalUnitsReserved = (int) $allBalances->sum('quantity_reserved');
+        $totalUnitsAvailable = (int) $allBalances->sum(fn ($b) => $b->available_quantity);
+        $lowStockCount = $allBalances->filter(fn ($b) => $b->quantity_on_hand > 0 && $b->quantity_on_hand <= 5)->count();
+        $outOfStockCount = $allBalances->filter(fn ($b) => $b->quantity_on_hand <= 0)->count();
+
+        // Valuation
+        $retailValuation = $allBalances->sum(function ($b) {
+            $price = $b->variant?->effective_selling_price ?? 0;
+            return $b->quantity_on_hand * $price;
+        });
+
+        $costValuation = $allBalances->sum(function ($b) {
+            $cost = $b->variant?->effective_purchase_price ?? 0;
+            return $b->quantity_on_hand * $cost;
+        });
+
+        // 3. Retail Sales & Register Metrics
+        $todaySalesAmount = 0;
+        $todaySalesCount = 0;
+        $totalSalesAmount = 0;
+        $activeRegister = null;
+        $recentSales = collect();
+
+        if (!$store->is_warehouse) {
+            $todaySalesAmount = (float) $store->posSales()
+                ->where('status', 'completed')
+                ->whereDate('created_at', today())
+                ->sum('total_payable');
+
+            $todaySalesCount = $store->posSales()
+                ->where('status', 'completed')
+                ->whereDate('created_at', today())
+                ->count();
+
+            $totalSalesAmount = (float) $store->posSales()
+                ->where('status', 'completed')
+                ->sum('total_payable');
+
+            $activeRegister = $store->dailyCashRegisters()
+                ->where('status', 'open')
+                ->with('opener')
+                ->latest()
+                ->first();
+
+            $recentSales = $store->posSales()
+                ->with(['cashier', 'customer'])
+                ->latest()
+                ->limit(6)
+                ->get();
+        }
+
+        // 4. Logistics & Transfers
+        $recentTransfers = \App\Models\StockTransfer::with(['sourceStore', 'destinationStore', 'creator'])
+            ->where(function ($q) use ($store) {
+                $q->where('source_store_id', $store->id)
+                    ->orWhere('destination_store_id', $store->id);
+            })
+            ->latest()
+            ->limit(6)
+            ->get();
+
+        $inTransitInbound = \App\Models\StockTransfer::where('destination_store_id', $store->id)
+            ->where('status', 'in_transit')
+            ->count();
+
+        $inTransitOutbound = \App\Models\StockTransfer::where('source_store_id', $store->id)
+            ->where('status', 'in_transit')
+            ->count();
+
+        // 5. Staff
+        $staffMembers = $store->staff()->where('is_active', true)->get();
+
+        return view('stores.show', compact(
+            'store',
+            'stockBalances',
+            'totalSkus',
+            'totalUnitsOnHand',
+            'totalUnitsReserved',
+            'totalUnitsAvailable',
+            'lowStockCount',
+            'outOfStockCount',
+            'retailValuation',
+            'costValuation',
+            'todaySalesAmount',
+            'todaySalesCount',
+            'totalSalesAmount',
+            'activeRegister',
+            'recentSales',
+            'recentTransfers',
+            'inTransitInbound',
+            'inTransitOutbound',
+            'staffMembers'
+        ));
     }
 }
