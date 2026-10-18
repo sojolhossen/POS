@@ -21,7 +21,7 @@ class StoreController extends Controller
     {
         $user = $request->user();
 
-        $query = Store::with('manager');
+        $query = Store::with('manager')->withCount('staff');
 
         if (!$user->isSuperAdmin()) {
             if ($user->isWarehouseStaff()) {
@@ -38,6 +38,30 @@ class StoreController extends Controller
             }
         }
 
+        $statsBase = clone $query;
+        $stats = [
+            'total' => (clone $statsBase)->count(),
+            'retail' => (clone $statsBase)->where('is_warehouse', false)->count(),
+            'warehouse' => (clone $statsBase)->where('is_warehouse', true)->count(),
+            'active' => (clone $statsBase)->where('is_active', true)->count(),
+        ];
+
+        if ($request->filled('type')) {
+            if ($request->type === 'warehouse') {
+                $query->where('is_warehouse', true);
+            } elseif ($request->type === 'retail') {
+                $query->where('is_warehouse', false);
+            }
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -47,9 +71,9 @@ class StoreController extends Controller
             });
         }
 
-        $stores = $query->orderBy('is_warehouse', 'desc')->orderBy('name')->paginate(15)->withQueryString();
+        $stores = $query->orderBy('is_warehouse', 'desc')->orderBy('name')->paginate(12)->withQueryString();
 
-        return view('stores.index', compact('stores'));
+        return view('stores.index', compact('stores', 'stats'));
     }
 
     /**
