@@ -90,7 +90,7 @@
                     @if($todayRegister->isOpen())
                         <!-- Details Toggle Button -->
                         <button type="button" @click="showDetails = !showDetails"
-                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
                             <span>📊</span>
                             <span class="hidden sm:inline" x-text="showDetails ? '{{ __('messages.hide_breakdown') }}' : '{{ __('messages.view_breakdown') }}'">{{ __('messages.view_breakdown') }}</span>
                             <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" :class="showDetails ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -98,21 +98,21 @@
 
                         <!-- Quick Action: Expense -->
                         <button type="button" @click="showExpenseModal = true"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-bold text-xs transition">
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
                             <span>💸</span>
                             <span>{{ __('messages.record_drawer_expense') }}</span>
                         </button>
 
                         <!-- Quick Action: Remit -->
                         <button type="button" @click="showTransferModal = true"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition">
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
                             <span>🏦</span>
                             <span>{{ __('messages.remit_cash_to_owner') }}</span>
                         </button>
 
                         <!-- Quick Action: Close -->
                         <button type="button" @click="showClosingForm = !showClosingForm"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition">
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
                             <span>🔒</span>
                             <span>{{ __('messages.close_drawer_btn') }}</span>
                         </button>
@@ -122,7 +122,7 @@
                             @csrf
                             <input type="text" name="reopen_reason" required placeholder="{{ __('messages.reopen_reason_placeholder') }}"
                                    class="text-xs rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-1.5 w-48">
-                            <button type="submit" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition whitespace-nowrap">
+                            <button type="submit" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs shadow-sm transition whitespace-nowrap">
                                 {{ __('messages.reopen_day') }}
                             </button>
                         </form>
