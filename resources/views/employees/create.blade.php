@@ -50,19 +50,15 @@
             </div>
 
             <div>
-                <label for="role" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Role *</label>
-                <select name="role" id="role" required class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
-                    <option value="sales_associate" {{ old('role') === 'sales_associate' ? 'selected' : '' }}>Sales Associate</option>
-                    <option value="cashier" {{ old('role') === 'cashier' ? 'selected' : '' }}>Cashier</option>
-                    <option value="store_manager" {{ old('role') === 'store_manager' ? 'selected' : '' }}>Store Manager</option>
-                    <option value="warehouse_staff" {{ old('role') === 'warehouse_staff' ? 'selected' : '' }}>Warehouse Staff</option>
-                    <option value="cleaner" {{ old('role') === 'cleaner' ? 'selected' : '' }}>Support / Cleaner</option>
+                <label for="designation" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Designation / Role *</label>
+                <select name="designation" id="designation" required class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="Sales Associate" {{ old('designation') === 'Sales Associate' ? 'selected' : '' }}>Sales Associate</option>
+                    <option value="Cashier" {{ old('designation') === 'Cashier' ? 'selected' : '' }}>Cashier</option>
+                    <option value="Store Manager" {{ old('designation') === 'Store Manager' ? 'selected' : '' }}>Store Manager</option>
+                    <option value="Warehouse Staff" {{ old('designation') === 'Warehouse Staff' ? 'selected' : '' }}>Warehouse Staff</option>
+                    <option value="Security / Guard" {{ old('designation') === 'Security / Guard' ? 'selected' : '' }}>Security / Guard</option>
+                    <option value="Cleaner / Support" {{ old('designation') === 'Cleaner / Support' ? 'selected' : '' }}>Cleaner / Support</option>
                 </select>
-            </div>
-
-            <div>
-                <label for="designation" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Designation Title</label>
-                <input type="text" name="designation" id="designation" value="{{ old('designation') }}" placeholder="e.g. Senior Floor Associate" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
             </div>
 
             <div>
@@ -81,14 +77,24 @@
             </div>
 
             <div>
-                <label for="base_salary" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Monthly Base Salary (BDT ৳) *</label>
-                <input type="number" step="0.01" min="0" name="base_salary" id="base_salary" value="{{ old('base_salary', '0.00') }}" required class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm font-mono focus:ring-emerald-500 focus:border-emerald-500">
+                <label for="monthly_salary" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Monthly Base Salary (BDT ৳) *</label>
+                <input type="number" step="0.01" min="0" name="monthly_salary" id="monthly_salary" value="{{ old('monthly_salary', '0.00') }}" required class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm font-mono focus:ring-emerald-500 focus:border-emerald-500">
             </div>
 
-            <div>
-                <label for="bank_details" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Bank / bKash / Nagad Disbursement Info</label>
-                <input type="text" name="bank_details" id="bank_details" value="{{ old('bank_details') }}" placeholder="e.g. bKash Personal 017XXXXXXXX" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
-            </div>
+            @if(isset($users) && $users->count() > 0)
+                <div class="md:col-span-2">
+                    <label for="user_id" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Link Login User Account (Optional)</label>
+                    <select name="user_id" id="user_id" class="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:ring-emerald-500 focus:border-emerald-500">
+                        <option value="">-- No Login Account (Floor Staff / Worker) --</option>
+                        @foreach($users as $u)
+                            <option value="{{ $u->id }}" {{ old('user_id') == $u->id ? 'selected' : '' }}>
+                                {{ $u->name }} ({{ $u->email }}) — [{{ $u->roleName }}]
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-1">If this worker also needs to log in to POS or Admin Dashboard, select their user account here.</p>
+                </div>
+            @endif
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Employee Management</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">Manage store associates, cashiers, store managers, and monthly base salary configurations.</p>
         </div>
-        @if(in_array(auth()->user()->role, ['super_admin', 'store_manager']))
+        @if(auth()->user()->isSuperAdmin() || auth()->user()->isStoreManager())
             <a href="{{ route('employees.create') }}" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-lg shadow-sm">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Add Employee
@@ -30,9 +30,9 @@
                     <tr>
                         <th class="px-6 py-3">Code / Name</th>
                         <th class="px-6 py-3">Assigned Store</th>
-                        <th class="px-6 py-3">Role / Designation</th>
+                        <th class="px-6 py-3">Designation</th>
                         <th class="px-6 py-3">Contact</th>
-                        @if(in_array(auth()->user()->role, ['super_admin', 'accountant']))
+                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isAccountant())
                             <th class="px-6 py-3 text-right">Base Salary</th>
                         @endif
                         <th class="px-6 py-3">Status</th>
@@ -52,23 +52,22 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-400">{{ $emp->role }}</div>
-                                <div class="text-xs text-slate-500">{{ $emp->designation ?? 'N/A' }}</div>
+                                <div class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ $emp->designation ?? 'N/A' }}</div>
                             </td>
                             <td class="px-6 py-4 text-xs">
-                                <div>{{ $emp->phone }}</div>
+                                <div>{{ $emp->phone ?? 'No phone' }}</div>
                                 <div class="text-slate-400">{{ $emp->email ?? 'No email' }}</div>
                             </td>
-                            @if(in_array(auth()->user()->role, ['super_admin', 'accountant']))
+                            @if(auth()->user()->isSuperAdmin() || auth()->user()->isAccountant())
                                 <td class="px-6 py-4 text-right font-mono font-bold text-slate-900 dark:text-white">
-                                    ৳{{ number_format($emp->base_salary, 2) }}
+                                    ৳{{ number_format($emp->monthly_salary, 2) }}
                                 </td>
                             @endif
                             <td class="px-6 py-4">
-                                @if($emp->status === 'active')
+                                @if($emp->employment_status === 'active')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Active</span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">{{ ucfirst($emp->status) }}</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">{{ ucfirst($emp->employment_status ?? 'Inactive') }}</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-right text-xs space-x-2">
@@ -77,7 +76,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ in_array(auth()->user()->role, ['super_admin', 'accountant']) ? 7 : 6 }}" class="px-6 py-12 text-center text-slate-500">
+                            <td colspan="{{ (auth()->user()->isSuperAdmin() || auth()->user()->isAccountant()) ? 7 : 6 }}" class="px-6 py-12 text-center text-slate-500">
                                 No employees found.
                             </td>
                         </tr>
