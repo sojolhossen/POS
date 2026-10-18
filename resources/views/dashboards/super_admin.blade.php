@@ -61,7 +61,38 @@
     </div>
 
     <!-- PENDING ACTIONS / SYSTEM ATTENTION NOTICE -->
-    @if($pendingExpensesCount > 0 || $openCashRegisters->count() > 0 || $pendingTransfersCount > 0 || $lowStockCount > 0)
+    @if(($pendingCashTransfersCount ?? 0) > 0 || $pendingExpensesCount > 0 || $openCashRegisters->count() > 0 || $pendingTransfersCount > 0 || $lowStockCount > 0)
+        <!-- FLASHING PROMINENT BANNER FOR CASH TRANSFERS TO OWNER -->
+        @if(($pendingCashTransfersCount ?? 0) > 0)
+            <div class="p-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 dark:from-amber-950/40 dark:via-orange-950/30 dark:to-amber-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shrink-0 font-bold shadow-md shadow-amber-500/30 animate-bounce">
+                        💰
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-100 uppercase tracking-wide">
+                                {{ $pendingCashTransfersCount }} Store Cash Remittance(s) Waiting for Your Approval!
+                            </h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
+                                NEW CASH
+                            </span>
+                        </div>
+                        <p class="text-xs text-amber-800/90 dark:text-amber-200/90 mt-0.5">
+                            Store managers transferred total <strong class="font-mono text-slate-900 dark:text-white font-black text-sm">৳{{ number_format($pendingCashTransfersSum ?? 0, 2) }}</strong> to owner/bank. Verify and approve to deposit into financial account.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <a href="{{ route('daily-registers.index') }}" 
+                       class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/30 transition whitespace-nowrap">
+                        <span>Review & Approve Cash</span>
+                        <span>&rarr;</span>
+                    </a>
+                </div>
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
             @if($pendingExpensesCount > 0)
                 <a href="{{ route('expenses.index') }}" class="p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 flex items-center justify-between hover:bg-amber-100/60 transition">

@@ -59,6 +59,9 @@ class DashboardController extends Controller
         $supplierDues = (float) Supplier::sum('outstanding_balance');
         $pendingExpensesCount = Expense::where('status', 'pending_approval')->count();
         $pendingTransfersCount = StockTransfer::whereIn('status', ['requested', 'in_transit'])->count();
+        $pendingCashTransfers = StoreCashTransfer::where('status', 'pending')->with('store', 'transferredBy')->latest()->get();
+        $pendingCashTransfersCount = $pendingCashTransfers->count();
+        $pendingCashTransfersSum = (float) $pendingCashTransfers->sum('amount');
         $lowStockCount = StockBalance::where('quantity_on_hand', '<=', 5)->where('quantity_on_hand', '>', 0)->count();
 
         $financialAccounts = FinancialAccount::where('is_active', true)->get();
@@ -169,6 +172,9 @@ class DashboardController extends Controller
             'supplierDues',
             'pendingExpensesCount',
             'pendingTransfersCount',
+            'pendingCashTransfers',
+            'pendingCashTransfersCount',
+            'pendingCashTransfersSum',
             'lowStockCount',
             'financialAccounts',
             'totalLiquidCash',

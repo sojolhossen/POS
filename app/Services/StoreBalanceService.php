@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DailyCashRegister;
 use App\Models\PosSale;
 use App\Models\Store;
+use App\Models\StoreCashTransfer;
 use App\Models\User;
 
 class StoreBalanceService
@@ -103,12 +104,26 @@ class StoreBalanceService
             ];
         }
 
+        // 3. Pending cash transfers awaiting super admin verification / approval
+        $pendingTransfersQuery = StoreCashTransfer::where('status', 'pending');
+        if (!$user->isSuperAdmin() && !empty($storeIds)) {
+            $pendingTransfersQuery->whereIn('store_id', $storeIds);
+        }
+        $pendingTransfersCount = $pendingTransfersQuery->count();
+        $pendingTransfersSum = (float) $pendingTransfersQuery->sum('amount');
+        $latestPendingTransfers = $pendingTransfersCount > 0 
+            ? (clone $pendingTransfersQuery)->with('store', 'transferredBy')->latest()->take(3)->get()
+            : collect();
+
         return [
             'liveBalance' => $totalLiveBalance,
             'todaySales' => $todaySales,
             'scopeName' => $scopeName,
             'storeBreakdown' => $storeBreakdown,
             'isAllStores' => $isAllStores,
+            'pendingCashTransfersCount' => $pendingTransfersCount,
+            'pendingCashTransfersSum' => $pendingTransfersSum,
+            'latestPendingTransfers' => $latestPendingTransfers,
         ];
     }
 }
