@@ -45,7 +45,18 @@ class StockCountController extends Controller
         $user = $request->user();
         $storesQuery = Store::active()->orderBy('name');
         if (!$user->isSuperAdmin()) {
-            $storesQuery->where('id', $user->store_id);
+            if ($user->isWarehouseStaff()) {
+                $storesQuery->warehouseOnly();
+            } elseif ($user->isStoreManager()) {
+                $storesQuery->where(function ($q) use ($user) {
+                    $q->where('manager_id', $user->id);
+                    if ($user->store_id) {
+                        $q->orWhere('id', $user->store_id);
+                    }
+                });
+            } else {
+                $storesQuery->where('id', $user->store_id);
+            }
         }
         $stores = $storesQuery->get();
 

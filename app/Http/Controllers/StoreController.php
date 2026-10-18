@@ -26,6 +26,13 @@ class StoreController extends Controller
         if (!$user->isSuperAdmin()) {
             if ($user->isWarehouseStaff()) {
                 $query->warehouseOnly();
+            } elseif ($user->isStoreManager()) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('manager_id', $user->id);
+                    if ($user->store_id) {
+                        $q->orWhere('id', $user->store_id);
+                    }
+                });
             } else {
                 $query->where('id', $user->store_id);
             }

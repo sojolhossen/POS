@@ -240,15 +240,25 @@
                 <div class="font-bold text-slate-900 dark:text-slate-100 truncate text-[11px]">
                     @if(auth()->user()->isSuperAdmin())
                         Central Command (All Stores)
+                    @elseif(auth()->user()->isStoreManager() && auth()->user()->managedStores->count() > 1)
+                        {{ auth()->user()->store?->name ?? auth()->user()->managedStores->first()->name }} (+{{ auth()->user()->managedStores->count() - 1 }} more)
                     @elseif(auth()->user()->store)
                         {{ auth()->user()->store->name }}
+                    @elseif(auth()->user()->isStoreManager() && auth()->user()->managedStores->isNotEmpty())
+                        {{ auth()->user()->managedStores->first()->name }}
                     @else
                         Unassigned Location
                     @endif
                 </div>
                 <div class="text-[10px] text-slate-500 font-mono mt-0.5">
-                    @if(auth()->user()->store)
+                    @if(auth()->user()->isSuperAdmin())
+                        Central Warehouse + 6 Stores
+                    @elseif(auth()->user()->isStoreManager() && auth()->user()->managedStores->count() > 1)
+                        Manager of {{ auth()->user()->managedStores->count() }} Stores
+                    @elseif(auth()->user()->store)
                         Code: {{ auth()->user()->store->code }} • {{ auth()->user()->store->is_warehouse ? 'Warehouse' : 'Retail' }}
+                    @elseif(auth()->user()->isStoreManager() && auth()->user()->managedStores->isNotEmpty())
+                        Code: {{ auth()->user()->managedStores->first()->code }} • {{ auth()->user()->managedStores->first()->is_warehouse ? 'Warehouse' : 'Retail' }}
                     @else
                         Central Warehouse + 6 Stores
                     @endif

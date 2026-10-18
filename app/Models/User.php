@@ -101,7 +101,8 @@ class User extends Authenticatable
     /**
      * Store scoping check:
      * Super Admin and Warehouse Staff can view all / central warehouse.
-     * Store Managers and Cashiers are strictly scoped to their assigned store.
+     * Store Managers can access all stores they manage (manager_id) as well as their primary store_id.
+     * Cashiers are strictly scoped to their assigned store.
      */
     public function canAccessStore(?int $storeId): bool
     {
@@ -118,7 +119,17 @@ class User extends Authenticatable
             return $store && $store->is_warehouse;
         }
 
+        if ($this->isStoreManager()) {
+            return (int) $this->store_id === (int) $storeId
+                || Store::where('id', $storeId)->where('manager_id', $this->id)->exists();
+        }
+
         return (int) $this->store_id === (int) $storeId;
+    }
+
+    public function managedStores(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Store::class, 'manager_id');
     }
 
     public function scopeActive($query)

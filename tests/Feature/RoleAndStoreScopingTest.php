@@ -45,6 +45,54 @@ class RoleAndStoreScopingTest extends TestCase
     }
 
     /**
+     * Test Store Manager assigned to multiple stores can view all assigned stores.
+     */
+    public function test_store_manager_can_access_all_assigned_managed_stores(): void
+    {
+        $manager = User::factory()->create([
+            'role' => UserRole::STORE_MANAGER,
+            'is_active' => true,
+        ]);
+
+        $store1 = Store::create([
+            'name' => 'Flagship Store',
+            'code' => 'STR-101',
+            'manager_id' => $manager->id,
+            'is_active' => true,
+        ]);
+
+        $store2 = Store::create([
+            'name' => 'Outlet Store',
+            'code' => 'STR-102',
+            'manager_id' => $manager->id,
+            'is_active' => true,
+        ]);
+
+        $store3 = Store::create([
+            'name' => 'Other Branch',
+            'code' => 'STR-103',
+            'manager_id' => null,
+            'is_active' => true,
+        ]);
+
+        $manager->update(['store_id' => $store1->id]);
+
+        // Manager can view the stores directory and sees both managed stores
+        $response = $this->actingAs($manager)->get(route('stores.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Flagship Store');
+        $response->assertSee('Outlet Store');
+        $response->assertDontSee('Other Branch');
+
+        // Manager can view details of both managed stores
+        $this->actingAs($manager)->get(route('stores.show', $store1))->assertStatus(200);
+        $this->actingAs($manager)->get(route('stores.show', $store2))->assertStatus(200);
+
+        // Manager cannot view store 3
+        $this->actingAs($manager)->get(route('stores.show', $store3))->assertStatus(403);
+    }
+
+    /**
      * Test Cashier cannot access administrative routes.
      */
     public function test_cashier_cannot_access_admin_store_or_staff_routes(): void
